@@ -3,6 +3,7 @@ import { PageShell } from "@/components/PageShell";
 import { ArticleCard } from "@/components/ArticleCard";
 import { feeds, articles, Article } from "@/data/articles";
 import { Rss, ExternalLink, BellRing, Share2 } from "lucide-react";
+import { SynthesisPanel } from "@/components/SynthesisPanel";
 
 // Slug helper - keep in sync with sidebar
 export const slugify = (s: string) =>
@@ -55,6 +56,7 @@ const Feed = () => {
           </span>
         </>
       }
+      aside={<SynthesisPanel />}
     >
       {/* Feed header card */}
       <div className="rounded-2xl border border-border bg-card shadow-soft p-6 mb-6 flex items-start gap-5">
