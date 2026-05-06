@@ -51,7 +51,7 @@ export const articles: Article[] = [
     category: "Crypto · Régulation",
     readTime: "13 min",
     excerpt:
-      "Le Comitée de Bâle sur la supervision bancaire revoit ses règles punitives sur les investissements en crypto-actifs des institutions financières, suite à un pushback substantiel des associations.",
+      "Le Comité deee Bâle sur la supervision bancaire revoit ses règles punitives sur les investissements en crypto-actifs des institutions financières, suite à un pushback substantiel des associations.",
     publishedAt: "Il y a 5h",
   },
   {
