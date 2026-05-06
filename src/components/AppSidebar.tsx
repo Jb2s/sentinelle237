@@ -15,17 +15,19 @@ import {
   Settings,
   ChevronDown,
   Rss,
+  Link,
 } from "lucide-react";
 import { feeds } from "@/data/articles";
 import { cn } from "@/lib/utils";
 import { NavLink } from "react-router-dom";
+import SidebarSection from "./SidebarSection";
 
 
 const mainItems = [
   { icon: Sun, label: "Aujourd'hui", to: "/" },
   { icon: Bookmark, label: "À lire plus tard", to: "/a-lire-plus-tard" },
   { icon: PenLine, label: "Annotés", to: "/annotes" },
-  { icon: Brain, label: "Entraîner Alexendre", to: "/entrainer-alexandre" },
+  { icon: Brain, label: "Entraîner Alexandre", to: "/entrainer-alexandre" },
   // { icon: Users, label: "Admin équipe" },
 ];
 
@@ -105,40 +107,27 @@ export function AppSidebar() {
         </div>
 
         <div className="px-3 flex-1 overflow-y-auto">
-          <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-sidebar-foreground hover:bg-sidebar-accent/60">
-            <span className="flex items-center gap-2">
+          <NavLink
+            to="/"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-sidebar-foreground hover:bg-sidebar-accent/60"
+          >            
+          <span className="flex items-center gap-2">
               <Rss className="w-4 h-4" />
               Tous
             </span>
             <span className="text-xs text-muted-foreground">1K+</span>
-          </button>
+          </NavLink>
 
-          <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-primary-deep bg-secondary mt-1">
-            <span className="flex items-center gap-2">
-              <ChevronDown className="w-4 h-4" />
-              Finance & Banking
-            </span>
-            <span className="text-xs">1K+</span>
-          </button>
-
-          <div className="pl-4 mt-1 space-y-0.5">
-            {feeds.map((feed) => (
-              <button
-                key={feed.name}
-                className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/60 group transition-smooth"
-              >
-                <span
-                  className={cn("w-2 h-2 rounded-sm flex-shrink-0", feed.color)}
-                />
-                <span className="truncate flex-1 text-left text-[13px]">
-                  {feed.name}
-                </span>
-                <span className="text-[11px] text-muted-foreground group-hover:text-primary">
-                  {feed.count}
-                </span>
-              </button>
-            ))}
-          </div>
+          <SidebarSection
+            title="Finance & Banking"
+            count="1K+"
+            feeds={feeds}
+          />
+          <SidebarSection
+            title="Economic"
+            count="1K+"
+            feeds={feeds}
+          />
         </div>
       </aside>
     </div>

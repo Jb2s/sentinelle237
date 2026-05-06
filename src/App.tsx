@@ -8,6 +8,7 @@ import ReadLater from "./pages/ReadLater.tsx";
 import Annotated from "./pages/Annotated.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import TrainAlexandre from "./pages/TrainAlexandre.tsx";
+import Feed from "./pages/Feeds.tsx";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/a-lire-plus-tard" element={<ReadLater />} />
           <Route path="/annotes" element={<Annotated />} />
           <Route path="/entrainer-alexandre" element={<TrainAlexandre />} />
+          <Route path="/flux/:slug" element={<Feed />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

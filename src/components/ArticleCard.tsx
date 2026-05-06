@@ -41,7 +41,6 @@ export function ArticleCard({ article }: { article: Article }) {
         style={{ opacity: hasActiveState ? 1 : undefined }}
       >
 
-        {/* 👁️ VU */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -57,7 +56,6 @@ export function ArticleCard({ article }: { article: Article }) {
           <Eye className="w-4 h-4" />
         </button>
 
-        {/* ✏️ ANNOTER */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -73,7 +71,6 @@ export function ArticleCard({ article }: { article: Article }) {
           <PenLine className="w-4 h-4" />
         </button>
 
-        {/* 🔖 BOOKMARK */}
         <button
           onClick={toggleBookmark}
           className={cn(
@@ -130,8 +127,6 @@ export function ArticleCard({ article }: { article: Article }) {
         </div>
       </div>
 
-      {/* ✏️ ZONE ANNOTATION */}
-      {/* ✏️ ZONE ANNOTATION */}
       <div
         className={cn(
           "transition-all duration-300 overflow-hidden",

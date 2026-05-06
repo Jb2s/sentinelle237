@@ -11,6 +11,7 @@ interface PageShellProps {
 }
 
 export function PageShell({ eyebrow, title, meta, children, aside }: PageShellProps) {
+
   return (
     <div className="flex min-h-screen bg-background">
       <AppSidebar />

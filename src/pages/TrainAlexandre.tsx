@@ -5,7 +5,7 @@ import { articles } from "@/data/articles";
 const TrainAlexandre = () => (
   <PageShell
     eyebrow="IA personnalisée"
-    title="Entraîner Leo"
+    title="Entraîner Alexandre"
     meta={<span>Affinez les recommandations en notant les articles ci-dessous</span>}
   >
     <div className="grid md:grid-cols-3 gap-4 mb-8">
