@@ -21,7 +21,7 @@ const ReadLater = () => {
       {saved.length === 0 ? (
         <div className="border border-dashed border-border rounded-xl py-20 text-center text-muted-foreground">
           <Bookmark className="w-8 h-8 mx-auto mb-3 opacity-60" />
-          Aucun article enregistré pour le moment.
+          Aucun article enregistré pour le moment
         </div>
       ) : (
         <div
