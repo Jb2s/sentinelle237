@@ -4,8 +4,9 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { feeds, articles, Article } from "@/data/articles";
 import { Rss, ExternalLink, BellRing, Share2 } from "lucide-react";
 import { SynthesisPanel } from "@/components/SynthesisPanel";
+import { useViewMode } from "@/context/ViewModeContext";
+import { cn } from "@/lib/utils";
 
-// Slug helper - keep in sync with sidebar
 export const slugify = (s: string) =>
   s
     .toLowerCase()
@@ -14,7 +15,6 @@ export const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-// Mock articles per feed (deterministic seed from name)
 function buildFeedArticles(name: string, color: string): Article[] {
   const base = articles.slice(0, 4);
   return base.map((a, i) => ({
@@ -35,6 +35,7 @@ function buildFeedArticles(name: string, color: string): Article[] {
 
 const Feed = () => {
   const { slug } = useParams();
+  const { viewMode } = useViewMode();
   const feed = feeds.find((f) => slugify(f.name) === slug);
 
   if (!feed) return <Navigate to="/" replace />;
@@ -58,13 +59,13 @@ const Feed = () => {
       }
       aside={<SynthesisPanel />}
     >
-      {/* Feed header card */}
       <div className="rounded-2xl border border-border bg-card shadow-soft p-6 mb-6 flex items-start gap-5">
         <div
           className={`w-16 h-16 rounded-2xl ${feed.color} flex items-center justify-center text-primary-foreground shadow-soft`}
         >
           <Rss className="w-7 h-7" />
         </div>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold">
@@ -82,6 +83,7 @@ const Feed = () => {
             sont indexés par Leo pour la synthèse quotidienne.
           </p>
         </div>
+
         <div className="flex flex-col gap-2">
           <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary-deep transition-smooth">
             <BellRing className="w-3.5 h-3.5" /> Suivi(e)
@@ -105,7 +107,13 @@ const Feed = () => {
         </span>
       </div>
 
-      <div className="space-y-1">
+      <div
+        className={cn(
+          viewMode === "grid"
+            ? "grid grid-cols-1 md:grid-cols-1 xl:grid-cols-2 gap-6"
+            : "space-y-1"
+        )}
+      >
         {feedArticles.map((a) => (
           <ArticleCard key={a.id} article={a} />
         ))}

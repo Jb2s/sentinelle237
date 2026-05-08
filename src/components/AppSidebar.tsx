@@ -3,24 +3,20 @@ import {
   Bookmark,
   PenLine,
   Brain,
-  Users,
   Plus,
   Search,
-  UserPlus,
   Moon,
   Wrench,
-  Package,
   Gift,
   HelpCircle,
   Settings,
-  ChevronDown,
   Rss,
-  Link,
 } from "lucide-react";
 import { feeds } from "@/data/articles";
 import { cn } from "@/lib/utils";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import SidebarSection from "./SidebarSection";
+import { Home } from "lucide-react";
 
 
 const mainItems = [
@@ -32,24 +28,38 @@ const mainItems = [
 ];
 
 export function AppSidebar() {
+  const navigate = useNavigate();
   return (
     <div className="flex h-screen sticky top-0">
       {/* Rail */}
       <aside className="w-14 bg-gradient-primary flex flex-col items-center py-4 gap-5 text-primary-foreground">
+        <button
+              onClick={() => navigate("/")}
+              className="w-9 h-9 rounded-lg hover:bg-primary-foreground/15 flex items-center justify-center transition-smooth"
+>
         <div className="w-9 h-9 rounded-xl bg-primary-foreground/15 backdrop-blur flex items-center justify-center font-display font-bold">
-          R
+          <Home className="w-5 h-5" />
         </div>
+        </button>
+
         <div className="flex flex-col gap-4 mt-4 opacity-90">
-          {[Plus, Search, Moon, Wrench, Package, Gift, HelpCircle].map(
-            (Icon, i) => (
-              <button
-                key={i}
-                className="w-9 h-9 rounded-lg hover:bg-primary-foreground/15 flex items-center justify-center transition-smooth"
-              >
-                <Icon className="w-4 h-4" />
-              </button>
-            )
-          )}
+          {[
+            { Icon: Plus, label: "Ajouter un flux", onClick: () => navigate("/ajouter-flux") },
+            { Icon: Search, label: "Rechercher un flux", onClick: () => navigate("/recherche") },
+            { Icon: Moon, label: "Thème", onClick: () => {} },
+            { Icon: Wrench, label: "Outils", onClick: () => {} },
+            { Icon: Gift, label: "Nouveautés", onClick: () => {} },
+            { Icon: HelpCircle, label: "Aide", onClick: () => {} },
+          ].map(({ Icon, label, onClick }) => (
+            <button
+              key={label}
+              onClick={onClick}
+              title={label}
+              className="w-9 h-9 rounded-lg hover:bg-primary-foreground/15 flex items-center justify-center transition-smooth"
+            >
+              <Icon className="w-4 h-4" />
+            </button>
+          ))}
         </div>
         <div className="mt-auto flex flex-col gap-3">
           <div className="w-9 h-9 rounded-full bg-highlight border-2 border-primary-foreground/40" />
@@ -71,7 +81,7 @@ export function AppSidebar() {
           </h1>
         </div>
 
- <nav className="px-3 py-4 space-y-0.5">
+        <nav className="px-3 py-4 space-y-0.5">
           {mainItems.map((item) => (
             <NavLink
               key={item.label}

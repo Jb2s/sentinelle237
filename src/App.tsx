@@ -9,6 +9,8 @@ import Annotated from "./pages/Annotated.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import TrainAlexandre from "./pages/TrainAlexandre.tsx";
 import Feed from "./pages/Feeds.tsx";
+import AddFeeds from "./pages/AddFeeds.tsx";
+import SearchPage from "./pages/Search.tsx";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +31,8 @@ const App = () => (
           <Route path="/annotes" element={<Annotated />} />
           <Route path="/entrainer-alexandre" element={<TrainAlexandre />} />
           <Route path="/flux/:slug" element={<Feed />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/ajouter-flux" element={<AddFeeds />} />
+          <Route path="/recherche" element={<SearchPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

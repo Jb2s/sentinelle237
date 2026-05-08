@@ -7,6 +7,8 @@ export type Article = {
   readTime: string;
   excerpt: string;
   publishedAt: string;
+  url?: string;
+  content?: string;
 };
 
 export const articles: Article[] = [
@@ -51,7 +53,7 @@ export const articles: Article[] = [
     category: "Crypto · Régulation",
     readTime: "13 min",
     excerpt:
-      "Le Comité dee Bâle sur la supervision bancaire revoit ses règles punitives sur les investissements en crypto-actifs des institutions financières, suite à un pushback substantiel des associations.",
+      "Le Comité de Bâle sur la supervision bancaire revoit ses règles punitives sur les investissements en crypto-actifs des institutions financières, suite à un pushback substantiel des associations.",
     publishedAt: "Il y a 5h",
   },
   {
@@ -94,3 +96,11 @@ export const feeds = [
   { name: "Faisal Khan", count: 7, color: "bg-primary-deep" },
   { name: "Finance Fortune", count: 48, color: "bg-highlight" },
 ];
+
+export const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
