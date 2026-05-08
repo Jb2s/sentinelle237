@@ -4,6 +4,7 @@ import { articles } from "@/data/articles";
 import { Bookmark } from "lucide-react";
 import { useViewMode } from "@/context/ViewModeContext";
 import { cn } from "@/lib/utils";
+import { SynthesisPanel } from "@/components/SynthesisPanel";
 
 const saved = articles.slice(0, 3);
 
@@ -15,6 +16,7 @@ const ReadLater = () => {
       eyebrow="Bibliothèque · Hors-ligne"
       title="À lire plus tard"
       meta={<span>{saved.length} articles enregistrés · synchronisés</span>}
+      aside={<SynthesisPanel />}
     >
       {saved.length === 0 ? (
         <div className="border border-dashed border-border rounded-xl py-20 text-center text-muted-foreground">
@@ -33,6 +35,7 @@ const ReadLater = () => {
             <ArticleCard key={a.id} article={a} />
           ))}
         </div>
+        
       )}
     </PageShell>
   );
