@@ -2,7 +2,7 @@ import { useParams, Navigate } from "react-router-dom";
 import { PageShell } from "@/components/PageShell";
 import { ArticleCard } from "@/components/ArticleCard";
 import { feeds, articles, Article } from "@/data/articles";
-import { Rss, ExternalLink, BellRing, Share2 } from "lucide-react";
+import { Rss, ExternalLink, BellMinus, Share2 } from "lucide-react";
 import { SynthesisPanel } from "@/components/SynthesisPanel";
 import { useViewMode } from "@/context/ViewModeContext";
 import { cn } from "@/lib/utils";
@@ -86,10 +86,7 @@ const Feed = () => {
 
         <div className="flex flex-col gap-2">
           <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary-deep transition-smooth">
-            <BellRing className="w-3.5 h-3.5" /> Suivi(e)
-          </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-secondary transition-smooth">
-            <Share2 className="w-3.5 h-3.5" /> Partager
+            <BellMinus className="w-3.5 h-3.5" /> Ne plus suivre
           </button>
           <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-secondary transition-smooth">
             <ExternalLink className="w-3.5 h-3.5" /> Site

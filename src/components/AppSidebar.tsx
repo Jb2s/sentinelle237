@@ -1,5 +1,6 @@
 import {
   Sun,
+  Clock3,
   Bookmark,
   PenLine,
   Brain,
@@ -7,7 +8,6 @@ import {
   Search,
   Moon,
   Wrench,
-  Gift,
   HelpCircle,
   Settings,
   Rss,
@@ -17,39 +17,44 @@ import { cn } from "@/lib/utils";
 import { NavLink, useNavigate } from "react-router-dom";
 import SidebarSection from "./SidebarSection";
 import { Home } from "lucide-react";
-
+import { useTheme } from "@/context/theme-context";
 
 const mainItems = [
-  { icon: Sun, label: "Aujourd'hui", to: "/" },
+  { icon: Clock3, label: "Aujourd'hui", to: "/" },
   { icon: Bookmark, label: "À lire plus tard", to: "/a-lire-plus-tard" },
   { icon: PenLine, label: "Annotés", to: "/annotes" },
   { icon: Brain, label: "Entraîner Alexandre", to: "/entrainer-alexandre" },
-  // { icon: Users, label: "Admin équipe" },
+  // { icon: Wrench, label: "Outils", to: "/outils" },
 ];
 
 export function AppSidebar() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="flex h-screen sticky top-0">
       {/* Rail */}
       <aside className="w-14 bg-gradient-primary flex flex-col items-center py-4 gap-5 text-primary-foreground">
         <button
-              onClick={() => navigate("/")}
-              className="w-9 h-9 rounded-lg hover:bg-primary-foreground/15 flex items-center justify-center transition-smooth"
->
-        <div className="w-9 h-9 rounded-xl bg-primary-foreground/15 backdrop-blur flex items-center justify-center font-display font-bold">
-          <Home className="w-5 h-5" />
-        </div>
+          onClick={() => navigate("/")}
+          className="w-9 h-9 rounded-lg hover:bg-primary-foreground/15 flex items-center justify-center transition-smooth"
+        >
+          <div className="w-9 h-9 rounded-xl bg-primary-foreground/15 backdrop-blur flex items-center justify-center font-display font-bold">
+            <Home className="w-5 h-5" />
+          </div>
         </button>
 
         <div className="flex flex-col gap-4 mt-4 opacity-90">
           {[
             { Icon: Plus, label: "Ajouter un flux", onClick: () => navigate("/ajouter-flux") },
             { Icon: Search, label: "Rechercher un flux", onClick: () => navigate("/recherche") },
-            { Icon: Moon, label: "Thème", onClick: () => {} },
-            { Icon: Wrench, label: "Outils", onClick: () => {} },
-            { Icon: Gift, label: "Nouveautés", onClick: () => {} },
-            { Icon: HelpCircle, label: "Aide", onClick: () => {} },
+            {
+              Icon: theme === "dark" ? Sun : Moon,
+              label: "Thème",
+              onClick: toggleTheme,
+            },
+            { Icon: Wrench, label: "Outils", onClick: () => navigate("/outils") },
+            { Icon: HelpCircle, label: "Aide", onClick: () => navigate("/help") },
           ].map(({ Icon, label, onClick }) => (
             <button
               key={label}
@@ -61,6 +66,7 @@ export function AppSidebar() {
             </button>
           ))}
         </div>
+
         <div className="mt-auto flex flex-col gap-3">
           <div className="w-9 h-9 rounded-full bg-highlight border-2 border-primary-foreground/40" />
           <div className="w-9 h-9 rounded-full bg-primary-glow border-2 border-primary-foreground/40" />
@@ -77,7 +83,7 @@ export function AppSidebar() {
             </span>
           </div>
           <h1 className="font-display font-bold text-xl mt-1 text-sidebar-foreground">
-            Fintech Radar
+            DisVi 
           </h1>
         </div>
 
@@ -100,9 +106,7 @@ export function AppSidebar() {
                 <>
                   <item.icon className="w-4 h-4" />
                   {item.label}
-                  {isActive && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
-                  )}
+                  {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
                 </>
               )}
             </NavLink>
@@ -120,8 +124,8 @@ export function AppSidebar() {
           <NavLink
             to="/"
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-sidebar-foreground hover:bg-sidebar-accent/60"
-          >            
-          <span className="flex items-center gap-2">
+          >
+            <span className="flex items-center gap-2">
               <Rss className="w-4 h-4" />
               Tous
             </span>
@@ -130,7 +134,7 @@ export function AppSidebar() {
 
           <SidebarSection
             title="Finance & Banking"
-            count="1K+"
+            count="21K+"
             feeds={feeds}
           />
           <SidebarSection

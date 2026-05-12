@@ -11,7 +11,7 @@ const Index = () => {
   return (
     <PageShell
       eyebrow="Aujourd'hui · 30 avril 2026"
-      title="Fintech Radar"
+      title="DisVi"
       meta={
         <>
           <span>~1 article par semaine</span>
@@ -36,7 +36,7 @@ const Index = () => {
       <div
         className={cn(
           viewMode === "grid"
-            ? "grid grid-cols-1 md:grid-cols-1 xl:grid-cols-2 gap-6"
+            ? "grid grid-cols-1 md:f-cols-1 xl:grid-cols-2 gap-6"
             : "space-y-1"
         )}
       >

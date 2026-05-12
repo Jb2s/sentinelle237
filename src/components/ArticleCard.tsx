@@ -10,6 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useLocation } from "react-router-dom";
+import { useViewMode } from "@/context/ViewModeContext";
 
 export function ArticleCard({ article }: { article: Article }) {
   const [isRead, setIsRead] = useState(false);
@@ -17,6 +18,7 @@ export function ArticleCard({ article }: { article: Article }) {
   const [isAnnotating, setIsAnnotating] = useState(false);
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { viewMode } = useViewMode(); // Récupère le mode courant
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -85,7 +87,7 @@ export function ArticleCard({ article }: { article: Article }) {
               className={cn(
                 "p-2 rounded-full backdrop-blur transition shadow-soft",
                 isBookmarked
-                  ? "bg-green-500 text-white hover:bg-green-500"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-background/80 hover:bg-primary hover:text-white",
               )}
             >
@@ -94,19 +96,28 @@ export function ArticleCard({ article }: { article: Article }) {
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
+        {/* Layout adaptatif selon viewMode */}
+        <div
+          className={cn(
+            "flex flex-col gap-4 sm:gap-5", // Par défaut vertical en mobile
+            viewMode === "grid" ? "flex flex-col gap-4" : "flex flex-row gap-5 sm:gap-5" // Grid = colonne | List = ligne
+          )}
+        >
           <div className="flex-shrink-0">
             <div
               className={cn(
-                "w-full sm:w-24 md:w-28 h-24 sm:h-24 md:h-28 rounded-xl",
+                // Taille adaptative
+                viewMode === "grid"
+                  ? "w-full h-28 rounded-xl text-2xl"
+                  : "w-24 sm:w-28 h-24 sm:h-28 rounded-xl text-xl sm:text-2xl",
+                
                 "bg-gradient-to-br shadow-soft flex items-center justify-center",
                 "text-primary-foreground font-display font-bold",
-                "text-xl sm:text-2xl",
                 article.sourceColor,
               )}
             >
               <span className="opacity-90">
-                {article.source.split(" ")[0].slice(0, 2).toUpperCase()}
+                {article.source.split(" ")[0].slice(0, 2).toUpperCase()} 
               </span>
             </div>
           </div>
@@ -163,6 +174,7 @@ export function ArticleCard({ article }: { article: Article }) {
         </div>
       </article>
 
+      {/* Dialog inchangé */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="w-[min(92vw,42rem)] max-h-[85vh] overflow-y-auto backdrop-blur-xl">
           <DialogHeader>
