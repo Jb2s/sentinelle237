@@ -134,7 +134,7 @@ export function AppSidebar() {
 
           <SidebarSection
             title="Finance & Banking"
-            count="12K+"
+            count="13K+"
             feeds={feeds}
           />
           <SidebarSection
