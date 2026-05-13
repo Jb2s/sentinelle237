@@ -1,45 +1,99 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMemo, useState } from "react";
 import { PageShell } from "@/components/PageShell";
 import { feeds as initialFeeds } from "@/data/articles";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Check, Rss, Globe } from "lucide-react";
+import { Search, Check, Plus, Rss, Globe, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useViewMode } from "@/context/ViewModeContext";
+import { FeedSearch } from "@/components/FeedSearch";
 
-const suggested = [
-  { name: "TechCrunch Fintech", category: "Tech · Fintech", color: "bg-primary" },
-  { name: "PYMNTS", category: "Paiements", color: "bg-primary-deep" },
-  { name: "The Block", category: "Crypto", color: "bg-highlight" },
-  { name: "Decrypt", category: "Crypto", color: "bg-primary-glow" },
-  { name: "Banking Dive", category: "Banking", color: "bg-primary" },
-  { name: "Finextra", category: "Régulation", color: "bg-primary-deep" },
-  { name: "Sifted", category: "Startups", color: "bg-primary-glow" },
-  { name: "The Fintech Times", category: "Fintech", color: "bg-highlight" },
+type SourceType = "rss" | "social";
+type SocialPlatform = "twitter" | "instagram" | "linkedin" | "youtube";
+
+type FeedItem = {
+  id: string;
+  name: string;
+  category: string;
+  color: string;
+  type: SourceType;
+};
+
+const suggestedFeeds: FeedItem[] = [
+  { id: "techcrunch", name: "TechCrunch Fintech", category: "Tech · Fintech", color: "bg-primary", type: "rss" },
+  { id: "pymnts", name: "PYMNTS", category: "Paiements", color: "bg-primary-deep", type: "rss" },
+  { id: "theblock", name: "The Block", category: "Crypto", color: "bg-highlight", type: "rss" },
+  { id: "decrypt", name: "Decrypt", category: "Crypto", color: "bg-primary-glow", type: "rss" },
+  { id: "bankingdive", name: "Banking Dive", category: "Banking", color: "bg-primary", type: "rss" },
+  { id: "finextra", name: "Finextra", category: "Régulation", color: "bg-primary-deep", type: "rss" },
+  { id: "sifted", name: "Sifted", category: "Startups", color: "bg-primary-glow", type: "rss" },
+  { id: "fintechtimes", name: "The Fintech Times", category: "Fintech", color: "bg-highlight", type: "rss" },
 ];
+
+const socialPlatforms = [
+  { id: "twitter", label: "X / Twitter", color: "bg-slate-900" },
+  { id: "instagram", label: "Instagram", color: "bg-pink-500" },
+  { id: "linkedin", label: "LinkedIn", color: "bg-blue-600" },
+  { id: "youtube", label: "YouTube", color: "bg-red-500" },
+] as const;
 
 export default function AddFeed() {
   const { viewMode } = useViewMode();
+  const [sourceType, setSourceType] = useState<SourceType>("rss");
   const [query, setQuery] = useState("");
   const [url, setUrl] = useState("");
+  const [socialUrl, setSocialUrl] = useState("");
+  const [platform, setPlatform] = useState<SocialPlatform>("twitter");
   const [followed, setFollowed] = useState<Set<string>>(new Set());
+
+  const allFeeds = useMemo<FeedItem[]>(() => {
+    const existing = initialFeeds.map((f, i) => ({
+      id: `existing-${i}`,
+      name: f.name,
+      category: "Suivi",
+      color: f.color,
+      type: "rss" as const,
+    }));
+    return [...suggestedFeeds, ...existing];
+  }, []);
+
+  const rssFeeds = useMemo<FeedItem[]>(() => {
+    return allFeeds.filter((f) => f.type === "rss");
+  }, [allFeeds]);
+
+  const socialFeeds = useMemo<FeedItem[]>(() => {
+    return allFeeds.filter((f) => f.type === "social");
+  }, [allFeeds]);
 
   const all = useMemo(() => {
     const existing = initialFeeds.map((f) => ({
       name: f.name,
       category: "Suivi",
       color: f.color,
+      type: "rss" as const,
     }));
-    const merged = [...suggested, ...existing];
+
+    const merged = [...suggestedFeeds, ...existing].filter(
+      (item) => item.type === sourceType
+    );
+
     if (!query.trim()) return merged;
+
     const q = query.toLowerCase();
     return merged.filter(
       (f) =>
         f.name.toLowerCase().includes(q) ||
         f.category.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, sourceType]);
 
   const toggleFollow = (name: string) => {
     setFollowed((prev) => {
@@ -55,67 +109,163 @@ export default function AddFeed() {
     });
   };
 
-  const handleAddByUrl = (e: React.FormEvent) => {
+  const handleRssSelect = (item: FeedItem) => {
+    setUrl(item.name);
+    toggleFollow(item.name);
+  };
+
+  const handleSocialSelect = (item: FeedItem) => {
+    setSocialUrl(item.name);
+    toggleFollow(item.name);
+  };
+
+  const handleAddRss = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
-    toast.success(`Flux ajouté : ${url}`);
+    toast.success(`Flux RSS ajouté : ${url}`);
     setUrl("");
+  };
+
+  const handleAddSocial = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!socialUrl.trim()) return;
+    const selected = socialPlatforms.find((p) => p.id === platform);
+    toast.success(`${selected?.label} ajouté : ${socialUrl}`);
+    setSocialUrl("");
   };
 
   return (
     <PageShell
       eyebrow="Découverte"
-      title="Ajouter un flux"
-      meta={<span>Recherchez, explorez et abonnez-vous à de nouvelles sources.</span>}
+      title="Suivre une source"
+      meta={<span>Ajoutez un site RSS ou reliez un réseau social.</span>}
     >
       <div className="space-y-8">
-        <form
-          onSubmit={handleAddByUrl}
-          className="rounded-2xl border border-border bg-card p-6 shadow-sm"
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Globe className="w-4 h-4 text-primary" />
-            <h2 className="font-display font-bold text-lg">Ajouter par URL</h2>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Collez une URL de site web ou un flux RSS pour vous abonner directement.
-          </p>
-          <div className="flex gap-2">
-            <Input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://exemple.com/rss.xml"
-              className="flex-1"
-            />
-            <Button type="submit" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Ajouter
-            </Button>
-          </div>
-        </form>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={sourceType === "rss" ? "default" : "outline"}
+            onClick={() => setSourceType("rss")}
+            className="gap-2"
+          >
+            <Rss className="w-4 h-4" />
+            Sites / RSS
+          </Button>
+          <Button
+            type="button"
+            variant={sourceType === "social" ? "default" : "outline"}
+            onClick={() => setSourceType("social")}
+            className="gap-2"
+          >
+            <Share2 className="w-4 h-4" />
+            Réseaux sociaux
+          </Button>
+        </div>
+
+        {sourceType === "rss" ? (
+          <form
+            onSubmit={handleAddRss}
+            className="rounded-2xl border border-border bg-card p-6 shadow-sm"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Globe className="w-4 h-4 text-primary" />
+              <h2 className="font-display font-bold text-lg">
+                Suivre un site ou un flux RSS
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Recherchez un site par nom ou collez directement l’URL du flux RSS.
+            </p>
+            <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+              <FeedSearch
+                query={url}
+                setQuery={setUrl}
+                items={rssFeeds}
+                onSelect={handleRssSelect}
+              />
+              <Button type="submit" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Suivre
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <form
+            onSubmit={handleAddSocial}
+            className="rounded-2xl border border-border bg-card p-6 shadow-sm"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Share2 className="w-4 h-4 text-primary" />
+              <h2 className="font-display font-bold text-lg">
+                Suivre un réseau social
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Sélectionne une plateforme puis colle le lien du profil ou du compte.
+            </p>
+            <div className="grid gap-3 md:grid-cols-[180px_1fr_auto]">
+              <Select
+                value={platform}
+                onValueChange={(value) => setPlatform(value as SocialPlatform)}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Choisir une plateforme" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {socialPlatforms.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FeedSearch
+                query={socialUrl}
+                setQuery={setSocialUrl}
+                items={socialFeeds}
+                onSelect={handleSocialSelect}
+              />
+              <Button type="submit" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Suivre
+              </Button>
+            </div>
+          </form>
+        )}
 
         <div>
-          <div className="relative mb-5">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher un flux par nom ou catégorie…"
-              className="pl-10 h-11"
-            />
-          </div>
-
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display font-bold text-lg">
-              {query ? "Résultats" : "Suggestions pour vous"}
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <h2 className="font-display font-bold text-lg whitespace-nowrap">
+              {query
+                ? "Résultats"
+                : sourceType === "rss"
+                  ? "Suggestions pour vous"
+                  : "Plateformes disponibles"}
             </h2>
-            <span className="text-xs text-muted-foreground">{all.length} flux</span>
+
+            <div className="relative flex-1 max-w-xl">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={
+                  sourceType === "rss"
+                    ? "Rechercher un site ou une catégorie…"
+                    : "Rechercher un réseau social…"
+                }
+                className="pl-10 h-11"
+              />
+            </div>
+
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {all.length} source(s)
+            </span>
           </div>
 
           {all.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              Aucun flux ne correspond à « {query} ».
+              Aucun résultat pour « {query} ».
             </div>
           ) : (
             <ul
@@ -142,16 +292,16 @@ export default function AddFeed() {
                         feed.color
                       )}
                     >
-                      <Rss className="w-4 h-4" />
+                      {sourceType === "rss" ? (
+                        <Rss className="w-4 h-4" />
+                      ) : (
+                        <Share2 className="w-4 h-4" />
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate">
-                        {feed.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {feed.category}
-                      </div>
+                      <div className="font-semibold text-sm truncate">{feed.name}</div>
+                      <div className="text-xs text-muted-foreground">{feed.category}</div>
                     </div>
 
                     <Button

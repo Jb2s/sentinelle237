@@ -31,7 +31,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
-  
+
   return (
     <div className="flex h-screen sticky top-0">
       {/* Rail */}
@@ -103,7 +103,7 @@ export function AppSidebar() {
 </div>
 
         <div className="mt-auto flex flex-col gap-3">
-          <div className="w-9 h-9 rounded-full bg-highlight border-2 border-primary-foreground/40" />
+          {/* <div className="w-9 h-9 rounded-full bg-highlight border-2 border-primary-foreground/40" /> */}
           <div className="w-9 h-9 rounded-full bg-primary-glow border-2 border-primary-foreground/40" />
         </div>
       </aside>
