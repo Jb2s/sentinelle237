@@ -17,7 +17,7 @@ import { useViewMode } from "@/context/ViewModeContext";
 import { FeedSearch } from "@/components/FeedSearch";
 
 type SourceType = "rss" | "social";
-type SocialPlatform = "twitter" | "instagram" | "linkedin" | "youtube";
+type SocialPlatform = "twitter" | "instagram" | "linkedinn" | "youtube";
 
 type FeedItem = {
   id: string;
