@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { feeds } from "@/data/articles";
 import { cn } from "@/lib/utils";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import SidebarSection from "./SidebarSection";
 import { Home } from "lucide-react";
 import { useTheme } from "@/context/theme-context";
@@ -30,7 +30,8 @@ const mainItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-
+  const location = useLocation();
+  
   return (
     <div className="flex h-screen sticky top-0">
       {/* Rail */}
@@ -44,28 +45,62 @@ export function AppSidebar() {
           </div>
         </button>
 
-        <div className="flex flex-col gap-4 mt-4 opacity-90">
-          {[
-            { Icon: Plus, label: "Ajouter un flux", onClick: () => navigate("/ajouter-flux") },
-            { Icon: Search, label: "Rechercher un flux", onClick: () => navigate("/recherche") },
-            {
-              Icon: theme === "dark" ? Sun : Moon,
-              label: "Thème",
-              onClick: toggleTheme,
-            },
-            { Icon: Wrench, label: "Outils", onClick: () => navigate("/outils") },
-            { Icon: HelpCircle, label: "Aide", onClick: () => navigate("/help") },
-          ].map(({ Icon, label, onClick }) => (
-            <button
-              key={label}
-              onClick={onClick}
-              title={label}
-              className="w-9 h-9 rounded-lg hover:bg-primary-foreground/15 flex items-center justify-center transition-smooth"
-            >
-              <Icon className="w-4 h-4" />
-            </button>
-          ))}
-        </div>
+<div className="flex flex-col gap-4 mt-4 opacity-90">
+  {[
+    {
+      Icon: Plus,
+      label: "Ajouter un flux",
+      path: "/ajouter-flux",
+      onClick: () => navigate("/ajouter-flux"),
+    },
+
+    {
+      Icon: Search,
+      label: "Rechercher un flux",
+      path: "/recherche",
+      onClick: () => navigate("/recherche"),
+    },
+
+    {
+      Icon: theme === "dark" ? Sun : Moon,
+      label: "Thème",
+      path: null,
+      onClick: toggleTheme,
+    },
+
+    {
+      Icon: Wrench,
+      label: "Outils",
+      path: "/outils",
+      onClick: () => navigate("/outils"),
+    },
+
+    {
+      Icon: HelpCircle,
+      label: "Aide",
+      path: "/help",
+      onClick: () => navigate("/help"),
+    },
+  ].map(({ Icon, label, onClick, path }) => {
+    const isActive = path && location.pathname === path;
+
+    return (
+      <button
+        key={label}
+        onClick={onClick}
+        title={label}
+        className={cn(
+          "w-9 h-9 rounded-lg flex items-center justify-center transition-smooth",
+          isActive
+            ? "bg-primary text-primary-foreground shadow-soft"
+            : "hover:bg-primary-foreground/15",
+        )}
+      >
+        <Icon className="w-4 h-4" />
+      </button>
+    );
+  })}
+</div>
 
         <div className="mt-auto flex flex-col gap-3">
           <div className="w-9 h-9 rounded-full bg-highlight border-2 border-primary-foreground/40" />

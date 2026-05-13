@@ -14,7 +14,7 @@ const Index = () => {
       title="DisVi"
       meta={
         <>
-          <span>~1 article par semaine</span>
+          <span>Veille intelligente des flux RSS</span>
           <span>·</span>
           <span className="text-primary font-semibold">
             {articles.length} nouveautés

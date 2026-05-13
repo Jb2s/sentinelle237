@@ -14,6 +14,7 @@ import AddFeeds from "./pages/AddFeeds.tsx";
 import SearchPage from "./pages/Search.tsx";
 import Tools from "./pages/Tools.tsx";
 import Help from "./pages/Help.tsx";
+import SynthesisSettings from "./pages/SynthesisSettings.tsx";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/recherche" element={<SearchPage />} />
             <Route path="/outils" element={<Tools />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/tools/synthetisation-IA" element={<SynthesisSettings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
