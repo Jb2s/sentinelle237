@@ -1,7 +1,17 @@
 import { useState, useEffect } from "react";
-import { Clock, Bookmark, Eye, PenLine, Plus, ExternalLink } from "lucide-react";
+import {
+  Clock,
+  Bookmark,
+  Eye,
+  PenLine,
+  Plus,
+  ExternalLink,
+} from "lucide-react";
+
 import type { Article } from "@/data/articles";
+
 import { cn } from "@/lib/utils";
+
 import {
   Dialog,
   DialogContent,
@@ -9,33 +19,61 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+
 import { useLocation } from "react-router-dom";
 import { useViewMode } from "@/context/ViewModeContext";
 
 export function ArticleCard({ article }: { article: Article }) {
   const [isRead, setIsRead] = useState(false);
+
   const [isBookmarked, setIsBookmarked] = useState(false);
+
   const [isAnnotating, setIsAnnotating] = useState(false);
+
   const [open, setOpen] = useState(false);
+
   const location = useLocation();
-  const { viewMode } = useViewMode(); // Récupère le mode courant
+
+  const { viewMode } = useViewMode();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     const saved = localStorage.getItem(`bookmark-${article.id}`);
-    if (saved) setIsBookmarked(true);
+
+    if (saved) {
+      setIsBookmarked(true);
+    }
   }, [article.id]);
 
   const toggleBookmark = (e: React.MouseEvent) => {
     e.stopPropagation();
+
     const newValue = !isBookmarked;
+
     setIsBookmarked(newValue);
-    if (newValue) localStorage.setItem(`bookmark-${article.id}`, "true");
-    else localStorage.removeItem(`bookmark-${article.id}`);
+
+    if (newValue) {
+      localStorage.setItem(`bookmark-${article.id}`, "true");
+    } else {
+      localStorage.removeItem(`bookmark-${article.id}`);
+    }
   };
 
-  const hasActiveState = isRead || isAnnotating || isBookmarked;
+  const hasActiveState =
+    isRead || isAnnotating || isBookmarked;
+
   const articleUrl = article.url ?? "#";
+
+  const actionButtonClass = (active: boolean) =>
+    cn(
+      "p-2 rounded-full backdrop-blur transition-all duration-200 shadow-soft",
+      "focus:outline-none focus:ring-2 focus:ring-primary/40",
+      "active:scale-95",
+      active
+        ? "bg-primary text-primary-foreground ring-2 ring-primary/30 scale-105"
+        : "bg-background/80 hover:bg-primary hover:text-primary-foreground"
+    );
 
   return (
     <>
@@ -44,24 +82,23 @@ export function ArticleCard({ article }: { article: Article }) {
         className={cn(
           "group relative cursor-pointer rounded-2xl border transition-all duration-300",
           "p-4 sm:p-5 overflow-hidden",
-          "bg-background/80 hover:bg-card hover:shadow-lg hover:-translate-y-0.5",
-          hasActiveState ? "border-border shadow-md" : "border-transparent",
+          "bg-background/80",
+          "hover:bg-card hover:shadow-xl hover:border-primary/20",
+          hasActiveState
+            ? "border-border shadow-md"
+            : "border-transparent",
+          isRead && "opacity-75"
         )}
       >
-        <div
-          className="absolute top-3 right-3 z-10 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition"
-        >
+        {/* ACTIONS */}
+        <div className="absolute top-3 right-3 z-10 flex gap-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
+
               setIsRead((p) => !p);
             }}
-            className={cn(
-              "p-2 rounded-full backdrop-blur transition shadow-soft",
-              isRead
-                ? "bg-primary text-primary-foreground"
-                : "bg-background/80 hover:bg-primary hover:text-primary-foreground",
-            )}
+            className={actionButtonClass(isRead)}
           >
             <Eye className="w-4 h-4" />
           </button>
@@ -69,14 +106,10 @@ export function ArticleCard({ article }: { article: Article }) {
           <button
             onClick={(e) => {
               e.stopPropagation();
+
               setIsAnnotating((p) => !p);
             }}
-            className={cn(
-              "p-2 rounded-full backdrop-blur transition shadow-soft",
-              isAnnotating
-                ? "bg-primary text-primary-foreground"
-                : "bg-background/80 hover:bg-primary hover:text-primary-foreground",
-            )}
+            className={actionButtonClass(isAnnotating)}
           >
             <PenLine className="w-4 h-4" />
           </button>
@@ -84,53 +117,64 @@ export function ArticleCard({ article }: { article: Article }) {
           {location.pathname !== "/a-lire-plus-tard" && (
             <button
               onClick={toggleBookmark}
-              className={cn(
-                "p-2 rounded-full backdrop-blur transition shadow-soft",
-                isBookmarked
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-background/80 hover:bg-primary hover:text-white",
-              )}
+              className={actionButtonClass(isBookmarked)}
             >
               <Bookmark className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* Layout adaptatif selon viewMode */}
+        {/* CONTENT */}
         <div
           className={cn(
-            "flex flex-col gap-4 sm:gap-5", // Par défaut vertical en mobile
-            viewMode === "grid" ? "flex flex-col gap-4" : "flex flex-row gap-5 sm:gap-5" // Grid = colonne | List = ligne
+            "flex flex-col gap-4 sm:gap-5",
+            viewMode === "grid"
+              ? "flex flex-col gap-4"
+              : "flex flex-row gap-5 sm:gap-5"
           )}
         >
+          {/* IMAGE */}
           <div className="flex-shrink-0">
             <div
               className={cn(
-                // Taille adaptative
                 viewMode === "grid"
                   ? "w-full h-28 rounded-xl text-2xl"
                   : "w-24 sm:w-28 h-24 sm:h-28 rounded-xl text-xl sm:text-2xl",
-                
+
                 "bg-gradient-to-br shadow-soft flex items-center justify-center",
+
                 "text-primary-foreground font-display font-bold",
-                article.sourceColor,
+
+                article.sourceColor
               )}
             >
               <span className="opacity-90">
-                {article.source.split(" ")[0].slice(0, 2).toUpperCase()} 
+                {article.source
+                  .split(" ")[0]
+                  .slice(0, 2)
+                  .toUpperCase()}
               </span>
             </div>
           </div>
 
+          {/* TEXT */}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold">
                 {article.category}
               </span>
-              <span className="text-muted-foreground hidden sm:inline">·</span>
+
+              <span className="text-muted-foreground hidden sm:inline">
+                ·
+              </span>
+
               <span className="text-muted-foreground font-medium">
                 {article.source}
               </span>
+
+              {!isRead && (
+                <div className="w-2 h-2 rounded-full bg-primary ml-1" />
+              )}
             </div>
 
             <h3 className="mt-2 font-display font-bold text-[16px] sm:text-[17px] leading-snug text-foreground group-hover:text-primary-deep transition-smooth line-clamp-2">
@@ -140,9 +184,12 @@ export function ArticleCard({ article }: { article: Article }) {
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
+
                 {article.readTime}
               </span>
+
               <span className="hidden sm:inline">·</span>
+
               <span>{article.publishedAt}</span>
             </div>
 
@@ -152,10 +199,13 @@ export function ArticleCard({ article }: { article: Article }) {
           </div>
         </div>
 
+        {/* NOTES */}
         <div
           className={cn(
             "transition-all duration-300 overflow-hidden",
-            isAnnotating ? "max-h-40 opacity-100 mt-4" : "max-h-0 opacity-0",
+            isAnnotating
+              ? "max-h-40 opacity-100 mt-4"
+              : "max-h-0 opacity-0"
           )}
           onClick={(e) => e.stopPropagation()}
         >
@@ -164,9 +214,10 @@ export function ArticleCard({ article }: { article: Article }) {
               placeholder="Ajouter une note..."
               className="w-full min-h-24 p-3 pr-12 text-sm rounded-lg border bg-background resize-none focus:outline-none"
             />
+
             <button
               type="button"
-              className="absolute right-2 bottom-2 p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary-deep transition-smooth"
+              className="absolute right-2 bottom-2 p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary-deep transition-smooth active:scale-95"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -174,7 +225,7 @@ export function ArticleCard({ article }: { article: Article }) {
         </div>
       </article>
 
-      {/* Dialog inchangé */}
+      {/* DIALOG */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="w-[min(92vw,42rem)] max-h-[85vh] overflow-y-auto backdrop-blur-xl">
           <DialogHeader>
@@ -182,7 +233,9 @@ export function ArticleCard({ article }: { article: Article }) {
               <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold">
                 {article.category}
               </span>
+
               <span className="text-muted-foreground">·</span>
+
               <span className="text-muted-foreground font-medium">
                 {article.source}
               </span>
@@ -198,6 +251,7 @@ export function ArticleCard({ article }: { article: Article }) {
                 <span className="underline-offset-4 group-hover/link:underline">
                   {article.title}
                 </span>
+
                 <ExternalLink className="w-5 h-5 mt-1 flex-shrink-0 opacity-60 group-hover/link:opacity-100" />
               </a>
             </DialogTitle>
@@ -205,9 +259,12 @@ export function ArticleCard({ article }: { article: Article }) {
             <DialogDescription className="flex items-center gap-3 pt-2 text-xs">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
+
                 {article.readTime}
               </span>
+
               <span>·</span>
+
               <span>{article.publishedAt}</span>
             </DialogDescription>
           </DialogHeader>
@@ -215,12 +272,17 @@ export function ArticleCard({ article }: { article: Article }) {
           <div
             className={cn(
               "w-full h-32 sm:h-40 rounded-xl bg-gradient-to-br shadow-soft flex items-center justify-center",
+
               "text-primary-foreground font-display font-bold text-3xl sm:text-4xl",
-              article.sourceColor,
+
+              article.sourceColor
             )}
           >
             <span className="opacity-90">
-              {article.source.split(" ")[0].slice(0, 3).toUpperCase()}
+              {article.source
+                .split(" ")[0]
+                .slice(0, 3)
+                .toUpperCase()}
             </span>
           </div>
 
@@ -228,8 +290,11 @@ export function ArticleCard({ article }: { article: Article }) {
             <p className="text-base text-muted-foreground italic">
               {article.excerpt}
             </p>
+
             {article.content && (
-              <div className="whitespace-pre-line">{article.content}</div>
+              <div className="whitespace-pre-line">
+                {article.content}
+              </div>
             )}
           </div>
 
@@ -241,6 +306,7 @@ export function ArticleCard({ article }: { article: Article }) {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary-deep transition-smooth"
             >
               Lire sur {article.source}
+
               <ExternalLink className="w-4 h-4" />
             </a>
           </div>

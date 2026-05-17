@@ -257,7 +257,6 @@ export default function AddFeed() {
                 className="pl-10 h-11"
               />
             </div>
-
             <span className="text-xs text-muted-foreground whitespace-nowrap">
               {all.length} source(s)
             </span>

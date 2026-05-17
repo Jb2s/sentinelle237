@@ -5,24 +5,41 @@ import { Bookmark } from "lucide-react";
 import { useViewMode } from "@/context/ViewModeContext";
 import { cn } from "@/lib/utils";
 import { SynthesisPanel } from "@/components/SynthesisPanel";
+import { EmptyState } from "@/components/EmptyState";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const saved = articles.slice(0, 3);
 
 const ReadLater = () => {
   const { viewMode } = useViewMode();
 
+  const hasNoSavedArticles = saved.length === 0;
+
   return (
     <PageShell
       eyebrow="Bibliothèque · Hors-ligne"
       title="À lire plus tard"
-      meta={<span>{saved.length} articles enregistrés · synchronisés</span>}
+      meta={
+        <span>
+          {saved.length} articles enregistrés · synchronisés
+        </span>
+      }
       aside={<SynthesisPanel />}
     >
-      {saved.length === 0 ? (
-        <div className="border border-dashed border-border rounded-xl py-20 text-center text-muted-foreground">
-          <Bookmark className="w-8 h-8 mx-auto mb-3 opacity-60" />
-          Aucun article enregistré pour le moment.
-        </div>
+      {hasNoSavedArticles ? (
+        <EmptyState
+          icon={Bookmark}
+          title="Aucun article enregistré"
+          description="Ajoutez des articles à votre bibliothèque pour les retrouver ici, même hors connexion."
+          action={
+            <Button asChild className="gap-2">
+              <Link to="/">
+                Retour à la veille
+              </Link>
+            </Button>
+          }
+        />
       ) : (
         <div
           className={cn(
@@ -35,7 +52,6 @@ const ReadLater = () => {
             <ArticleCard key={a.id} article={a} />
           ))}
         </div>
-        
       )}
     </PageShell>
   );
