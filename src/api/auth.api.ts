@@ -10,7 +10,7 @@ export const authApi = {
   signup: (email: string, mot_de_passe: string, role: string) =>
     apiFetch("/api/auth/signup", {
       method: "POST",
-      body: JSON.stringify({ email, mot_de_passe, role: "Veilleur" }),
+      body: JSON.stringify({ email, mot_de_passe, role }),
     }),
 
   me: () => apiFetch("/api/auth/me"),
