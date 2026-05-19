@@ -15,6 +15,8 @@ import SearchPage from "./pages/Search.tsx";
 import Tools from "./pages/Tools.tsx";
 import Help from "./pages/Help.tsx";
 import SynthesisSettings from "./pages/SynthesisSettings.tsx";
+import AuthPage from "./pages/AuthPage.tsx";
+import ProtectedRoute from "@/routes/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +33,10 @@ const App = () => (
           }}
         >
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/connexion" element={<AuthPage initialMode="login" /> } />
+// App.tsx
+            <Route path="/" element={ <ProtectedRoute> <Index /> </ProtectedRoute>} />
+            <Route path="/inscription" element={<AuthPage initialMode="signup" /> } />
             <Route path="/a-lire-plus-tard" element={<ReadLater />} />
             <Route path="/annotes" element={<Annotated />} />
             <Route path="/entrainer-alexandre" element={<TrainAlexandre />} />
