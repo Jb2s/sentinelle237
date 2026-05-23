@@ -252,7 +252,7 @@ export default function AuthPage({
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-l flex items-center justify-center shadow-glow">
             <img
-              src="/disvi.ico"
+              src="/sentinelle237.ico"
               alt="Sentinelle 237"
               className="w-5 h-5"
             />
