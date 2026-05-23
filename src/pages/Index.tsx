@@ -56,7 +56,7 @@ const Index = () => {
   return (
     <PageShell
       eyebrow={`Aujourd'hui · ${today}`}
-      title="DisVi"
+      title="Sentinelle 237"
       meta={
         <>
           <span>Veille intelligente des flux RSS</span>
@@ -67,6 +67,7 @@ const Index = () => {
         </>
       }
       aside={<SynthesisPanel />}
+      
     >
       {hasNoArticles ? (
         <EmptyState

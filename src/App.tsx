@@ -35,7 +35,8 @@ const App = () => (
           <Routes>
             <Route path="/connexion" element={<AuthPage initialMode="login" /> } />
 // App.tsx
-            <Route path="/" element={ <ProtectedRoute> <Index /> </ProtectedRoute>} />
+            {/* <Route path="/" element={ <ProtectedRoute> <Index /> </ProtectedRoute>} /> */}
+            <Route path="/" element={  <Index /> } />
             <Route path="/inscription" element={<AuthPage initialMode="signup" /> } />
             <Route path="/a-lire-plus-tard" element={<ReadLater />} />
             <Route path="/annotes" element={<Annotated />} />

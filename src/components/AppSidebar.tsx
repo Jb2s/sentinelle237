@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Home,
+  User,
 } from "lucide-react";
 
 import { feeds } from "@/data/articles";
@@ -24,6 +25,9 @@ import { useTheme } from "@/context/theme-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
+import useAuthStore from "@/store/useAuthStore";
+import useLogoutSidebarStore from "@/store/useLogoutSidebarStore";
+
 const mainItems = [
   { icon: Clock3, label: "Aujourd'hui", to: "/" },
   { icon: Bookmark, label: "À lire plus tard", to: "/a-lire-plus-tard" },
@@ -31,10 +35,15 @@ const mainItems = [
   { icon: Brain, label: "Entraîner Alexandre", to: "/entrainer-alexandre" },
 ];
 
+
+
 export function AppSidebar() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+
+  const user = useAuthStore((state) => state.user);
+  const openLogoutBar = useLogoutSidebarStore((state) => state.openLogoutBar);
 
   const isMobile = useIsMobile();
 
@@ -86,10 +95,9 @@ export function AppSidebar() {
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
 
             <span className="font-display font-bold text-lg">
-              DisVi
+              Sentinelle 237
             </span>
           </div>
-
           <button
             onClick={() => setMobileOpen(true)}
             className="w-9 h-9 rounded-lg hover:bg-muted flex items-center justify-center transition-smooth"
@@ -113,9 +121,13 @@ export function AppSidebar() {
                 <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
                   Rassemblement
                 </div>
+                <div className="flex w-32">
+  <div className="h-1 flex-1 bg-[#CE1126]" />
+  <div className="h-1 flex-1 bg-[#FCD116]" />
+</div>
 
                 <h1 className="font-display font-bold text-xl mt-1">
-                  DisVi
+                  Sentinelle 237
                 </h1>
               </div>
 
@@ -212,7 +224,6 @@ export function AppSidebar() {
                 <Home className="w-5 h-5" />
               </div>
             </button>
-
             <div className="flex flex-col gap-4 mt-4 opacity-90">
               {railActions.map(({ Icon, label, onClick, path }) => {
                 const isActive = path && location.pathname === path;
@@ -236,7 +247,18 @@ export function AppSidebar() {
             </div>
 
             <div className="mt-auto flex flex-col gap-3">
-              <div className="w-9 h-9 rounded-full bg-primary-glow border-2 border-primary-foreground/40" />
+              <button onClick={openLogoutBar}
+                className="
+                  w-9 h-9 rounded-full
+                  bg-primary-glow
+                  border-2 border-primary-foreground/40
+                  flex items-center justify-center
+                  font-bold text-white
+                  cursor-pointer
+                "
+              >
+                {user?.email?.[0]?.toUpperCase()}
+              </button>
             </div>
           </aside>
 
@@ -252,7 +274,7 @@ export function AppSidebar() {
               </div>
 
               <h1 className="font-display font-bold text-xl mt-1 text-sidebar-foreground">
-                DisVi
+                Sentinelle 237
               </h1>
             </div>
 

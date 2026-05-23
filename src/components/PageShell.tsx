@@ -1,4 +1,6 @@
 import { AppSidebar } from "@/components/AppSidebar";
+import {LogoutSidebar }  from "@/components/Account";
+
 import {
   Check,
   LayoutGrid,
@@ -195,6 +197,7 @@ export function PageShell({
             <section>{children}</section>
           )}
         </div>
+        <LogoutSidebar/>
       </main>
     </div>
   );

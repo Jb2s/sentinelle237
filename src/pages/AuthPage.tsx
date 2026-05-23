@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import useAuthStore from "@/store/useAuthStore";
+
 import {
   Tabs,
   TabsContent,
@@ -23,6 +25,7 @@ type Mode = "login" | "signup";
 interface AuthPageProps {
   initialMode?: Mode;
 }
+
 
 export default function AuthPage({
   initialMode = "login",
@@ -58,6 +61,8 @@ export default function AuthPage({
   ) => {
     setErrorMessage(message);
   };
+
+  const setUser = useAuthStore((state) => state.setUser);
 
   // Validation mot de passe
   const validatePassword = (
@@ -192,10 +197,13 @@ export default function AuthPage({
           tokenStorage.set(
             accessToken
           );
-
+          setUser({
+            email: data.user.email,
+          });
           navigate("/", {
             replace: true,
           });
+
         }
       }
     } catch (err: any) {
@@ -245,13 +253,13 @@ export default function AuthPage({
           <div className="w-10 h-10 rounded-xl bg-gradient-to-l flex items-center justify-center shadow-glow">
             <img
               src="/disvi.ico"
-              alt="Disvi"
+              alt="Sentinelle 237"
               className="w-5 h-5"
             />
           </div>
 
           <span className="font-display font-bold text-2xl tracking-tight text-foreground">
-            DisVi
+            Sentinelle 237
           </span>
         </Link>
 
@@ -266,7 +274,7 @@ export default function AuthPage({
             <p className="text-sm text-muted-foreground mt-2">
               {mode === "login"
                 ? "Connectez-vous pour accéder à votre veille"
-                : "Quelques secondes pour rejoindre Disvi"}
+                : "Quelques secondes pour rejoindre Sentinelle 237"}
             </p>
 
             {/* MESSAGE ERREUR */}
