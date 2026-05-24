@@ -93,10 +93,14 @@ export function AppSidebar() {
         <header className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-background/95 backdrop-blur flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-
             <span className="font-display font-bold text-lg">
               Sentinelle 237
             </span>
+            <div className="flex items-center ml-1">
+              <div className="h-0.5 w-[6px] bg-[#007A5E]" />
+              <div className="h-0.5 w-[12px] bg-[#CE1126]" />
+              <div className="h-0.5 w-[18px] bg-[#FCD116]" />
+            </div>
           </div>
           <button
             onClick={() => setMobileOpen(true)}
@@ -118,17 +122,15 @@ export function AppSidebar() {
           <aside className="absolute left-0 top-0 h-full w-72 bg-sidebar border-r border-sidebar-border flex flex-col">
             <div className="flex items-center justify-between p-5 border-b border-sidebar-border">
               <div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
-                  Rassemblement
-                </div>
-                <div className="flex w-32">
-  <div className="h-1 flex-1 bg-[#CE1126]" />
-  <div className="h-1 flex-1 bg-[#FCD116]" />
-</div>
-
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 <h1 className="font-display font-bold text-xl mt-1">
                   Sentinelle 237
                 </h1>
+                <div className="flex items-center ml-1">
+                  <div className="h-0.5 w-[6px] bg-[#007A5E]" />
+                  <div className="h-0.5 w-[12px] bg-[#CE1126]" />
+                  <div className="h-0.5 w-[18px] bg-[#FCD116]" />
+                </div>
               </div>
 
               <button
@@ -267,15 +269,15 @@ export function AppSidebar() {
             <div className="p-5 border-b border-sidebar-border">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-
-                <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                  Rassemblement
-                </span>
+                <h1 className="font-display font-bold text-xl mt-1 text-sidebar-foreground">
+                  Sentinelle 237
+                </h1>
               </div>
-
-              <h1 className="font-display font-bold text-xl mt-1 text-sidebar-foreground">
-                Sentinelle 237
-              </h1>
+              <div className="flex items-center ml-5">
+                <div className="h-0.5 w-[6px] bg-[#007A5E]" />
+                <div className="h-0.5 w-[12px] bg-[#CE1126]" />
+                <div className="h-0.5 w-[18px] bg-[#FCD116]" />
+              </div>
             </div>
 
             <nav className="px-3 py-4 space-y-0.5">

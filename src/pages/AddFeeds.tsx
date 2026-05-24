@@ -15,9 +15,11 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useViewMode } from "@/context/ViewModeContext";
 import { FeedSearch } from "@/components/FeedSearch";
+import { rssApi } from "@/api/rss.api";
+import { tokenStorage } from "@/utils/token";
 
 type SourceType = "rss" | "social";
-type SocialPlatform = "twitter" | "instagram" | "linkedinn" | "youtube";
+type SocialPlatform = "twitter" | "instagram" | "linkedin" | "youtube";
 
 type FeedItem = {
   id: string;
@@ -25,6 +27,7 @@ type FeedItem = {
   category: string;
   color: string;
   type: SourceType;
+  url?: string;
 };
 
 const suggestedFeeds: FeedItem[] = [
@@ -47,12 +50,18 @@ const socialPlatforms = [
 
 export default function AddFeed() {
   const { viewMode } = useViewMode();
+    const token = tokenStorage.get();
+
   const [sourceType, setSourceType] = useState<SourceType>("rss");
   const [query, setQuery] = useState("");
-  const [url, setUrl] = useState("");
-  const [socialUrl, setSocialUrl] = useState("");
+  const [rssInput, setRssInput] = useState("");
+  const [socialInput, setSocialInput] = useState("");
+  const [selectedRss, setSelectedRss] = useState<FeedItem | null>(null);
+  const [selectedSocial, setSelectedSocial] = useState<FeedItem | null>(null);
   const [platform, setPlatform] = useState<SocialPlatform>("twitter");
   const [followed, setFollowed] = useState<Set<string>>(new Set());
+  const [isSubmittingRss, setIsSubmittingRss] = useState(false);
+  const [isSubmittingSocial, setIsSubmittingSocial] = useState(false);
 
   const allFeeds = useMemo<FeedItem[]>(() => {
     const existing = initialFeeds.map((f, i) => ({
@@ -65,25 +74,22 @@ export default function AddFeed() {
     return [...suggestedFeeds, ...existing];
   }, []);
 
-  const rssFeeds = useMemo<FeedItem[]>(() => {
+  const rssFeeds = useMemo(() => {
     return allFeeds.filter((f) => f.type === "rss");
   }, [allFeeds]);
 
-  const socialFeeds = useMemo<FeedItem[]>(() => {
+  const socialFeeds = useMemo(() => {
     return allFeeds.filter((f) => f.type === "social");
   }, [allFeeds]);
 
   const all = useMemo(() => {
-    const existing = initialFeeds.map((f) => ({
+    const merged = [...suggestedFeeds, ...initialFeeds.map((f, i) => ({
+      id: `existing-${i}`,
       name: f.name,
       category: "Suivi",
       color: f.color,
       type: "rss" as const,
-    }));
-
-    const merged = [...suggestedFeeds, ...existing].filter(
-      (item) => item.type === sourceType
-    );
+    }))].filter((item) => item.type === sourceType);
 
     if (!query.trim()) return merged;
 
@@ -100,38 +106,70 @@ export default function AddFeed() {
       const next = new Set(prev);
       if (next.has(name)) {
         next.delete(name);
-        toast.success(`${name} retiré de vos flux`);
       } else {
         next.add(name);
-        toast.success(`${name} ajouté à vos flux`);
       }
       return next;
     });
   };
 
   const handleRssSelect = (item: FeedItem) => {
-    setUrl(item.name);
+    setRssInput(item.name);
+    setSelectedRss(item);
     toggleFollow(item.name);
   };
 
   const handleSocialSelect = (item: FeedItem) => {
-    setSocialUrl(item.name);
+    setSocialInput(item.name);
+    setSelectedSocial(item);
     toggleFollow(item.name);
   };
 
-  const handleAddRss = (e: React.FormEvent) => {
+  const handleAddRss = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return;
-    toast.success(`Flux RSS ajouté : ${url}`);
-    setUrl("");
+    if (!rssInput.trim()) return;
+
+    try {
+      setIsSubmittingRss(true);
+
+      const sourceName = selectedRss?.name ?? rssInput.trim();
+      const sourceUrl = selectedRss?.url ?? rssInput.trim();
+
+      await rssApi.addRssSource(sourceName, sourceUrl, 60, token);
+
+      toast.success(`Flux RSS ajouté : ${sourceName}`);
+      setRssInput("");
+      setSelectedRss(null);
+    } catch (error) {
+      toast.error("Impossible d’ajouter la source RSS");
+    } finally {
+      setIsSubmittingRss(false);
+    }
   };
 
-  const handleAddSocial = (e: React.FormEvent) => {
+  const handleAddSocial = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!socialUrl.trim()) return;
-    const selected = socialPlatforms.find((p) => p.id === platform);
-    toast.success(`${selected?.label} ajouté : ${socialUrl}`);
-    setSocialUrl("");
+    if (!socialInput.trim()) return;
+
+    try {
+      setIsSubmittingSocial(true);
+
+      const selected = socialPlatforms.find((p) => p.id === platform);
+
+      await rssApi.addSocialSource(
+        selected?.label ?? platform,
+        socialInput.trim(),
+        token
+      );
+
+      toast.success(`${selected?.label ?? platform} ajouté : ${socialInput}`);
+      setSocialInput("");
+      setSelectedSocial(null);
+    } catch (error) {
+      toast.error("Impossible d’ajouter le réseau social");
+    } finally {
+      setIsSubmittingSocial(false);
+    }
   };
 
   return (
@@ -178,14 +216,14 @@ export default function AddFeed() {
             </p>
             <div className="grid gap-3 md:grid-cols-[1fr_auto]">
               <FeedSearch
-                query={url}
-                setQuery={setUrl}
+                query={rssInput}
+                setQuery={setRssInput}
                 items={rssFeeds}
                 onSelect={handleRssSelect}
               />
-              <Button type="submit" className="gap-2">
+              <Button type="submit" className="gap-2" disabled={isSubmittingRss}>
                 <Plus className="w-4 h-4" />
-                Suivre
+                {isSubmittingRss ? "Ajout..." : "Suivre"}
               </Button>
             </div>
           </form>
@@ -211,7 +249,6 @@ export default function AddFeed() {
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Choisir une plateforme" />
                 </SelectTrigger>
-
                 <SelectContent>
                   {socialPlatforms.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
@@ -220,15 +257,17 @@ export default function AddFeed() {
                   ))}
                 </SelectContent>
               </Select>
+
               <FeedSearch
-                query={socialUrl}
-                setQuery={setSocialUrl}
+                query={socialInput}
+                setQuery={setSocialInput}
                 items={socialFeeds}
                 onSelect={handleSocialSelect}
               />
-              <Button type="submit" className="gap-2">
+
+              <Button type="submit" className="gap-2" disabled={isSubmittingSocial}>
                 <Plus className="w-4 h-4" />
-                Suivre
+                {isSubmittingSocial ? "Ajout..." : "Suivre"}
               </Button>
             </div>
           </form>
@@ -257,6 +296,7 @@ export default function AddFeed() {
                 className="pl-10 h-11"
               />
             </div>
+
             <span className="text-xs text-muted-foreground whitespace-nowrap">
               {all.length} source(s)
             </span>
