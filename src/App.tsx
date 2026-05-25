@@ -17,6 +17,7 @@ import Help from "./pages/Help.tsx";
 import SynthesisSettings from "./pages/SynthesisSettings.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import ProtectedRoute from "@/routes/ProtectedRoute";
+import SourcePage from "@/pages/SourcePage";
 
 const queryClient = new QueryClient();
 
@@ -35,8 +36,8 @@ const App = () => (
           <Routes>
             <Route path="/connexion" element={<AuthPage initialMode="login" /> } />
 // App.tsx
-            {/* <Route path="/" element={ <ProtectedRoute> <Index /> </ProtectedRoute>} /> */}
-            <Route path="/" element={  <Index /> } />
+            <Route path="/" element={ <ProtectedRoute> <Index /> </ProtectedRoute>} />
+            {/* <Route path="/" element={  <Index /> } /> */}
             <Route path="/inscription" element={<AuthPage initialMode="signup" /> } />
             <Route path="/a-lire-plus-tard" element={<ReadLater />} />
             <Route path="/annotes" element={<Annotated />} />
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/outils" element={<Tools />} />
             <Route path="/help" element={<Help />} />
             <Route path="/tools/synthetisation-IA" element={<SynthesisSettings />} />
+            <Route path="/source/:id" element={<SourcePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -60,9 +60,9 @@ export function SynthesisPanel() {
             </div>
             <div>
               <p className="text-[11px] font-bold tracking-widest uppercase opacity-80">
-                Synthèse · IA
+              Cauris · IA
               </p>
-              <p className="font-display font-bold text-lg">Briefing du jour</p>
+              <p className="font-display font-bold text-lg">Note de synthèse</p>
             </div>
           </div>
 
@@ -83,8 +83,8 @@ export function SynthesisPanel() {
         {!synthesis && !loading && !error && (
           <div className="mt-6 p-5 rounded-2xl bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/15">
             <p className="text-sm leading-relaxed opacity-95">
-              Obtenez une synthèse exécutive instantanée de tous les articles du
-              jour : tendances, points clés et sujets à surveiller.
+              Obtenez une synthèse instantanée de tous les articles du
+              jour, de la semaine ou du mois: tendances, points clés et sujets à surveiller.
             </p>
           </div>
         )}

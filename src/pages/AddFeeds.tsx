@@ -5,9 +5,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageShell } from "@/components/PageShell";
-import { feeds as initialFeeds } from "@/data/articles";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Check, Plus, Rss, Globe, Share2 } from "lucide-react";
@@ -17,6 +16,7 @@ import { useViewMode } from "@/context/ViewModeContext";
 import { FeedSearch } from "@/components/FeedSearch";
 import { rssApi } from "@/api/rss.api";
 import { tokenStorage } from "@/utils/token";
+import { SourceLogo } from "@/components/SourceLogo";
 
 type SourceType = "rss" | "social";
 type SocialPlatform = "twitter" | "instagram" | "linkedin" | "youtube";
@@ -30,100 +30,162 @@ type FeedItem = {
   url?: string;
 };
 
-const suggestedFeeds: FeedItem[] = [
-  { id: "techcrunch", name: "TechCrunch Fintech", category: "Tech · Fintech", color: "bg-primary", type: "rss" },
-  { id: "pymnts", name: "PYMNTS", category: "Paiements", color: "bg-primary-deep", type: "rss" },
-  { id: "theblock", name: "The Block", category: "Crypto", color: "bg-highlight", type: "rss" },
-  { id: "decrypt", name: "Decrypt", category: "Crypto", color: "bg-primary-glow", type: "rss" },
-  { id: "bankingdive", name: "Banking Dive", category: "Banking", color: "bg-primary", type: "rss" },
-  { id: "finextra", name: "Finextra", category: "Régulation", color: "bg-primary-deep", type: "rss" },
-  { id: "sifted", name: "Sifted", category: "Startups", color: "bg-primary-glow", type: "rss" },
-  { id: "fintechtimes", name: "The Fintech Times", category: "Fintech", color: "bg-highlight", type: "rss" },
-];
-
 const socialPlatforms = [
-  { id: "twitter", label: "X / Twitter", color: "bg-slate-900" },
-  { id: "instagram", label: "Instagram", color: "bg-pink-500" },
-  { id: "linkedin", label: "LinkedIn", color: "bg-blue-600" },
-  { id: "youtube", label: "YouTube", color: "bg-red-500" },
+  { id: "twitter",   label: "X / Twitter", color: "bg-slate-900" },
+  { id: "instagram", label: "Instagram",   color: "bg-pink-500"  },
+  { id: "linkedin",  label: "LinkedIn",    color: "bg-blue-600"  },
+  { id: "youtube",   label: "YouTube",     color: "bg-red-500"   },
 ] as const;
 
 export default function AddFeed() {
   const { viewMode } = useViewMode();
-    const token = tokenStorage.get();
+  const token = tokenStorage.get();
 
   const [sourceType, setSourceType] = useState<SourceType>("rss");
   const [query, setQuery] = useState("");
   const [rssInput, setRssInput] = useState("");
   const [socialInput, setSocialInput] = useState("");
+
   const [selectedRss, setSelectedRss] = useState<FeedItem | null>(null);
   const [selectedSocial, setSelectedSocial] = useState<FeedItem | null>(null);
+
   const [platform, setPlatform] = useState<SocialPlatform>("twitter");
   const [followed, setFollowed] = useState<Set<string>>(new Set());
+
   const [isSubmittingRss, setIsSubmittingRss] = useState(false);
   const [isSubmittingSocial, setIsSubmittingSocial] = useState(false);
 
-  const allFeeds = useMemo<FeedItem[]>(() => {
-    const existing = initialFeeds.map((f, i) => ({
-      id: `existing-${i}`,
-      name: f.name,
-      category: "Suivi",
-      color: f.color,
-      type: "rss" as const,
+  const [isDetectingRss, setIsDetectingRss] = useState(false);
+  const [isDetectingSocial, setIsDetectingSocial] = useState(false);
+
+  const [rssDetectResult, setRssDetectResult] = useState<any>(null);
+
+  // Uniquement les flux détectés — aucune suggestion statique
+  const detectedFeeds = useMemo<FeedItem[]>(() => {
+    const candidates = rssDetectResult?.data?.candidates ?? [];
+    return candidates.map((c: { url: string; titre: string }, i: number) => ({
+      id:       `detected-${i}`,
+      name:     c.titre ?? c.url,
+      category: "Détecté",
+      color:    "bg-primary",
+      type:     "rss" as const,
+      url:      c.url,
     }));
-    return [...suggestedFeeds, ...existing];
-  }, []);
-
-  const rssFeeds = useMemo(() => {
-    return allFeeds.filter((f) => f.type === "rss");
-  }, [allFeeds]);
-
-  const socialFeeds = useMemo(() => {
-    return allFeeds.filter((f) => f.type === "social");
-  }, [allFeeds]);
+  }, [rssDetectResult]);
 
   const all = useMemo(() => {
-    const merged = [...suggestedFeeds, ...initialFeeds.map((f, i) => ({
-      id: `existing-${i}`,
-      name: f.name,
-      category: "Suivi",
-      color: f.color,
-      type: "rss" as const,
-    }))].filter((item) => item.type === sourceType);
+    const source = sourceType === "rss" ? detectedFeeds : [];
 
-    if (!query.trim()) return merged;
+    if (!query.trim()) return source;
 
     const q = query.toLowerCase();
-    return merged.filter(
+    return source.filter(
       (f) =>
         f.name.toLowerCase().includes(q) ||
         f.category.toLowerCase().includes(q)
     );
-  }, [query, sourceType]);
+  }, [detectedFeeds, query, sourceType]);
 
   const toggleFollow = (name: string) => {
     setFollowed((prev) => {
       const next = new Set(prev);
-      if (next.has(name)) {
-        next.delete(name);
-      } else {
-        next.add(name);
-      }
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
       return next;
     });
   };
 
   const handleRssSelect = (item: FeedItem) => {
-    setRssInput(item.name);
+    setRssInput(item.url ?? item.name);
     setSelectedRss(item);
-    toggleFollow(item.name);
   };
 
   const handleSocialSelect = (item: FeedItem) => {
-    setSocialInput(item.name);
+    setSocialInput(item.url ?? item.name);
     setSelectedSocial(item);
-    toggleFollow(item.name);
   };
+
+  useEffect(() => {
+    if (sourceType !== "rss") return;
+
+    const site_name = rssInput.trim();
+    if (!site_name || site_name.length < 3) {
+      setSelectedRss(null);
+      setRssDetectResult(null);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setIsDetectingRss(true);
+        const result: any = await rssApi.detectSources(site_name, token);
+        setRssDetectResult(result);
+
+        const detected = result?.data?.candidates?.[0] ?? null;
+        if (detected) {
+          setSelectedRss({
+            id:       detected.url ?? site_name,
+            name:     detected.titre ?? site_name,
+            category: "Détecté",
+            color:    "bg-primary",
+            type:     "rss",
+            url:      detected.url ?? site_name,
+          });
+        } else {
+          setSelectedRss(null);
+        }
+      } catch {
+        setRssDetectResult(null);
+        setSelectedRss(null);
+      } finally {
+        setIsDetectingRss(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [rssInput, sourceType, token]);
+
+  useEffect(() => {
+    if (sourceType !== "social") return;
+
+    const site_name = socialInput.trim();
+    if (!site_name || site_name.length < 3) {
+      setSelectedSocial(null);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setIsDetectingSocial(true);
+        const selected = socialPlatforms.find((p) => p.id === platform);
+        const result: any = await rssApi.detectSources(
+          selected?.label ?? platform,
+          site_name,
+          token
+        );
+
+        const detected = result?.data?.source ?? result?.source ?? null;
+        if (detected) {
+          setSelectedSocial({
+            id:       detected.id ?? site_name,
+            name:     detected.name ?? selected?.label ?? platform,
+            category: detected.category ?? "Détecté",
+            color:    "bg-primary",
+            type:     "social",
+            url:      detected.url ?? site_name,
+          });
+        } else {
+          setSelectedSocial(null);
+        }
+      } catch {
+        setSelectedSocial(null);
+      } finally {
+        setIsDetectingSocial(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [socialInput, sourceType, platform, token]);
 
   const handleAddRss = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,15 +195,17 @@ export default function AddFeed() {
       setIsSubmittingRss(true);
 
       const sourceName = selectedRss?.name ?? rssInput.trim();
-      const sourceUrl = selectedRss?.url ?? rssInput.trim();
+      const sourceUrl  = selectedRss?.url  ?? rssInput.trim();
 
       await rssApi.addRssSource(sourceName, sourceUrl, 60, token);
 
       toast.success(`Flux RSS ajouté : ${sourceName}`);
       setRssInput("");
       setSelectedRss(null);
-    } catch (error) {
-      toast.error("Impossible d’ajouter la source RSS");
+      setRssDetectResult(null);
+      setQuery("");
+    } catch {
+      toast.error("Impossible d'ajouter la source RSS");
     } finally {
       setIsSubmittingRss(false);
     }
@@ -154,19 +218,17 @@ export default function AddFeed() {
     try {
       setIsSubmittingSocial(true);
 
-      const selected = socialPlatforms.find((p) => p.id === platform);
+      const selected   = socialPlatforms.find((p) => p.id === platform);
+      const sourceName = selectedSocial?.name ?? selected?.label ?? platform;
 
-      await rssApi.addSocialSource(
-        selected?.label ?? platform,
-        socialInput.trim(),
-        token
-      );
+      await rssApi.addSocialSource(sourceName, socialInput.trim(), token);
 
       toast.success(`${selected?.label ?? platform} ajouté : ${socialInput}`);
       setSocialInput("");
       setSelectedSocial(null);
-    } catch (error) {
-      toast.error("Impossible d’ajouter le réseau social");
+      setQuery("");
+    } catch {
+      toast.error("Impossible d'ajouter le réseau social");
     } finally {
       setIsSubmittingSocial(false);
     }
@@ -212,20 +274,41 @@ export default function AddFeed() {
               </h2>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Recherchez un site par nom ou collez directement l’URL du flux RSS.
+              Recherchez un site par nom ou collez directement l'URL du flux RSS.
             </p>
+
             <div className="grid gap-3 md:grid-cols-[1fr_auto]">
               <FeedSearch
                 query={rssInput}
                 setQuery={setRssInput}
-                items={rssFeeds}
+                items={detectedFeeds}
                 onSelect={handleRssSelect}
+                onFollow={async (item) => {
+                  try {
+                    await rssApi.addRssSource(item.name, item.url, 10, token);
+                    toast.success(`${item.name} ajouté`);
+                  } catch (error) {
+                    console.error("Erreur ajout RSS :", error);
+                    toast.error("Erreur ajout RSS");
+                  }
+                }}
               />
-              <Button type="submit" className="gap-2" disabled={isSubmittingRss}>
-                <Plus className="w-4 h-4" />
-                {isSubmittingRss ? "Ajout..." : "Suivre"}
-              </Button>
+              <div className="flex flex-col items-center justify-center leading-tight">
+                <span className="text-xs opacity-70">
+                  {isSubmittingRss ? "En cours" : isDetectingRss ? "Analyse" : "Statut"}
+                </span>
+                <span className="text-sm font-medium">
+                  {isSubmittingRss ? "Ajout..." : isDetectingRss ? "Détection..." : "Prêt à suivre"}
+                </span>
+              </div>
             </div>
+
+            {selectedRss && (
+              <div className="mt-3 text-sm text-muted-foreground">
+                Source détectée :{" "}
+                <span className="text-foreground font-medium">{selectedRss.name}</span>
+              </div>
+            )}
           </form>
         ) : (
           <form
@@ -241,6 +324,7 @@ export default function AddFeed() {
             <p className="text-sm text-muted-foreground mb-4">
               Sélectionne une plateforme puis colle le lien du profil ou du compte.
             </p>
+
             <div className="grid gap-3 md:grid-cols-[180px_1fr_auto]">
               <Select
                 value={platform}
@@ -261,50 +345,73 @@ export default function AddFeed() {
               <FeedSearch
                 query={socialInput}
                 setQuery={setSocialInput}
-                items={socialFeeds}
+                items={[]}
                 onSelect={handleSocialSelect}
+                onFollow={async (item) => {
+                  try {
+                    await rssApi.addSocialSource(item.name, item.url, token);
+                    toast.success(`${item.name} ajouté`);
+                  } catch {
+                    toast.error("Erreur ajout réseau social");
+                  }
+                }}
               />
 
-              <Button type="submit" className="gap-2" disabled={isSubmittingSocial}>
-                <Plus className="w-4 h-4" />
-                {isSubmittingSocial ? "Ajout..." : "Suivre"}
-              </Button>
+              <div className="flex flex-col items-center justify-center leading-tight">
+                <span className="text-xs opacity-70">
+                  {isSubmittingSocial ? "En cours" : isDetectingSocial ? "Analyse" : "Statut"}
+                </span>
+                <span className="text-sm font-medium">
+                  {isSubmittingSocial ? "Ajout..." : isDetectingSocial ? "Détection..." : "Prêt à suivre"}
+                </span>
+              </div>
             </div>
+
+            {selectedSocial && (
+              <div className="mt-3 text-sm text-muted-foreground">
+                Source détectée :{" "}
+                <span className="text-foreground font-medium">{selectedSocial.name}</span>
+              </div>
+            )}
           </form>
         )}
 
         <div>
           <div className="flex items-center justify-between gap-4 mb-5">
             <h2 className="font-display font-bold text-lg whitespace-nowrap">
-              {query
-                ? "Résultats"
-                : sourceType === "rss"
-                  ? "Suggestions pour vous"
-                  : "Plateformes disponibles"}
+              {isDetectingRss
+                ? "Recherche en cours…"
+                : all.length > 0
+                ? "Flux trouvés"
+                : rssInput.length >= 3
+                ? "Aucun flux trouvé"
+                : "Tapez un nom de site pour commencer"}
             </h2>
 
-            <div className="relative flex-1 max-w-xl">
-              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={
-                  sourceType === "rss"
-                    ? "Rechercher un site ou une catégorie…"
-                    : "Rechercher un réseau social…"
-                }
-                className="pl-10 h-11"
-              />
-            </div>
+            {all.length > 0 && (
+              <div className="relative flex-1 max-w-xl">
+                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Filtrer les résultats…"
+                  className="pl-10 h-11"
+                />
+              </div>
+            )}
 
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {all.length} source(s)
-            </span>
+            {all.length > 0 && (
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {all.length} flux
+              </span>
+            )}
           </div>
 
-          {all.length === 0 ? (
+          {all.length === 0 && !isDetectingRss ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              Aucun résultat pour « {query} ».
+              {rssInput.length >= 3
+                ? `Aucun flux RSS détecté pour « ${rssInput} ». Essayez avec l'URL directe.`
+                : "Entrez le nom d'un site ou média pour détecter ses flux RSS."}
             </div>
           ) : (
             <ul
@@ -319,36 +426,41 @@ export default function AddFeed() {
 
                 return (
                   <li
-                    key={feed.name}
+                    key={feed.id}
                     className={cn(
                       "flex items-center gap-3 rounded-xl border border-border bg-card p-4 hover:shadow-md transition-smooth",
                       viewMode === "grid" ? "min-h-[84px]" : "min-h-[72px]"
                     )}
                   >
-                    <div
-                      className={cn(
-                        "w-10 h-10 rounded-lg flex items-center justify-center text-primary-foreground",
-                        feed.color
-                      )}
-                    >
-                      {sourceType === "rss" ? (
-                        <Rss className="w-4 h-4" />
-                      ) : (
-                        <Share2 className="w-4 h-4" />
-                      )}
-                    </div>
+                    <SourceLogo
+                      url={feed.url!}
+                      name={feed.name}
+                      size={40}
+                      className="shrink-0"
+                      fallbackIcon="rss"
+                    />
 
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate">{feed.name}</div>
-                      <div className="text-xs text-muted-foreground">{feed.category}</div>
+                      <div className="text-xs text-muted-foreground truncate">{feed.url}</div>
                     </div>
 
                     <Button
                       type="button"
                       size="sm"
                       variant={isFollowed ? "secondary" : "default"}
-                      onClick={() => toggleFollow(feed.name)}
-                      className="gap-1.5"
+                      disabled={isFollowed}
+                      onClick={async () => {
+                        if (isFollowed) return;
+                        try {
+                          await rssApi.addRssSource(feed.name, feed.url!, 0, token);
+                          toggleFollow(feed.name);
+                          toast.success(`${feed.name} ajouté`);
+                        } catch {
+                          toast.error("Erreur lors de l'ajout");
+                        }
+                      }}
+                      className="gap-1.5 shrink-0"
                     >
                       {isFollowed ? (
                         <>
