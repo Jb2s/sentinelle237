@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-
+//Bon
 export default defineConfig({
   server: {
     host: "::",
@@ -21,7 +21,6 @@ export default defineConfig({
       },
     },
   },
-  // Wrangler va détecter cette ligne instantanément et valider le déploiement
   plugins: [
     react(),
     componentTagger()
