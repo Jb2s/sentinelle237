@@ -1,9 +1,18 @@
 
+# --- Étape 1 : Compilation du projet ---
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+
+# ASTUCE : On demande à Vite de remplacer l'alias "@" par le vrai chemin physique 
+# pendant le build pour contourner le bug d'import Linux
+RUN npx vite build --resolve.alias.@=/app/src
+
+# --- Étape 2 : Serveur web de production ---
 FROM nginx:alpine
-
-
-COPY ./dist /usr/share/nginx/html
-
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 RUN echo 'server { \
     listen 8080; \
@@ -13,14 +22,7 @@ RUN echo 'server { \
         index index.html index.htm; \
         try_files $uri $uri/ /index.html; \
     } \
-    error_page 500 502 503 504 /50x.html; \
-    location = /50x.html { \
-        root /usr/share/nginx/html; \
-        internal; \
-    } \
 }' > /etc/nginx/conf.d/default.conf
 
-
 EXPOSE 8080
-
 CMD ["nginx", "-g", "daemon off;"]
