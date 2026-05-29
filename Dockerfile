@@ -1,0 +1,26 @@
+
+FROM nginx:alpine
+
+
+COPY ./dist /usr/share/nginx/html
+
+
+RUN echo 'server { \
+    listen 8080; \
+    listen [::]:8080; \
+    location / { \
+        root /usr/share/nginx/html; \
+        index index.html index.htm; \
+        try_files $uri $uri/ /index.html; \
+    } \
+    error_page 500 502 503 504 /50x.html; \
+    location = /50x.html { \
+        root /usr/share/nginx/html; \
+        internal; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
+
+
+EXPOSE 8080
+
+CMD ["nginx", "-g", "daemon off;"]
