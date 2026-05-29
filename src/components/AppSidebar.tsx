@@ -12,7 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import useAuthStore from "@/store/useAuthStore";
 import useLogoutSidebarStore from "@/store/useLogoutSidebarStore";
-import { NotificationPanel } from "@/components/NotificationPanel";
+import { NotificationPanel } from "@/components/NotificationPanel.tsx";
 
 const mainItems = [
   { icon: Clock3,   label: "Aujourd'hui",      to: "/" },
