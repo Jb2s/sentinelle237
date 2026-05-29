@@ -193,18 +193,12 @@ export default function AuthPage({
           "Connexion réussie"
         );
 
-        if (accessToken) {
-          tokenStorage.set(
-            accessToken
-          );
-          setUser({
-            email: data.user.email,
-          });
-          navigate("/", {
-            replace: true,
-          });
+      if (accessToken) {
+        localStorage.setItem("token", accessToken);
+        setUser({ email: data.user.email }, accessToken);
+        navigate("/", { replace: true });
+      }
 
-        }
       }
     } catch (err: any) {
       console.error(
@@ -252,7 +246,7 @@ export default function AuthPage({
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-l flex items-center justify-center shadow-glow">
             <img
-              src="/sentinelle237.ico"
+              src="/logo fl.png"
               alt="Sentinelle 237"
               className="w-5 h-5"
             />

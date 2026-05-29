@@ -15,19 +15,18 @@ import { toast } from "sonner";
 import { useViewMode } from "@/context/ViewModeContext";
 import { FeedSearch } from "@/components/FeedSearch";
 import { rssApi } from "@/api/rss.api";
-import { tokenStorage } from "@/utils/token";
 import { SourceLogo } from "@/components/SourceLogo";
 
 type SourceType = "rss" | "social";
 type SocialPlatform = "twitter" | "instagram" | "linkedin" | "youtube";
 
 type FeedItem = {
-  id: string;
-  name: string;
+  id:       string;
+  name:     string;
   category: string;
-  color: string;
-  type: SourceType;
-  url?: string;
+  color:    string;
+  type:     SourceType;
+  url?:     string;
 };
 
 const socialPlatforms = [
@@ -37,30 +36,25 @@ const socialPlatforms = [
   { id: "youtube",   label: "YouTube",     color: "bg-red-500"   },
 ] as const;
 
+const CRAWL_FREQUENCY = 10; // minutes — crawl récurrent (le premier est immédiat côté backend)
+
 export default function AddFeed() {
   const { viewMode } = useViewMode();
-  const token = tokenStorage.get();
 
-  const [sourceType, setSourceType] = useState<SourceType>("rss");
-  const [query, setQuery] = useState("");
-  const [rssInput, setRssInput] = useState("");
-  const [socialInput, setSocialInput] = useState("");
-
-  const [selectedRss, setSelectedRss] = useState<FeedItem | null>(null);
-  const [selectedSocial, setSelectedSocial] = useState<FeedItem | null>(null);
-
-  const [platform, setPlatform] = useState<SocialPlatform>("twitter");
-  const [followed, setFollowed] = useState<Set<string>>(new Set());
-
-  const [isSubmittingRss, setIsSubmittingRss] = useState(false);
+  const [sourceType,       setSourceType]       = useState<SourceType>("rss");
+  const [query,            setQuery]            = useState("");
+  const [rssInput,         setRssInput]         = useState("");
+  const [socialInput,      setSocialInput]      = useState("");
+  const [selectedRss,      setSelectedRss]      = useState<FeedItem | null>(null);
+  const [selectedSocial,   setSelectedSocial]   = useState<FeedItem | null>(null);
+  const [platform,         setPlatform]         = useState<SocialPlatform>("twitter");
+  const [followed,         setFollowed]         = useState<Set<string>>(new Set());
+  const [isSubmittingRss,  setIsSubmittingRss]  = useState(false);
   const [isSubmittingSocial, setIsSubmittingSocial] = useState(false);
+  const [isDetectingRss,   setIsDetectingRss]   = useState(false);
+  const [isDetectingSocial,setIsDetectingSocial]= useState(false);
+  const [rssDetectResult,  setRssDetectResult]  = useState<any>(null);
 
-  const [isDetectingRss, setIsDetectingRss] = useState(false);
-  const [isDetectingSocial, setIsDetectingSocial] = useState(false);
-
-  const [rssDetectResult, setRssDetectResult] = useState<any>(null);
-
-  // Uniquement les flux détectés — aucune suggestion statique
   const detectedFeeds = useMemo<FeedItem[]>(() => {
     const candidates = rssDetectResult?.data?.candidates ?? [];
     return candidates.map((c: { url: string; titre: string }, i: number) => ({
@@ -75,14 +69,10 @@ export default function AddFeed() {
 
   const all = useMemo(() => {
     const source = sourceType === "rss" ? detectedFeeds : [];
-
     if (!query.trim()) return source;
-
     const q = query.toLowerCase();
     return source.filter(
-      (f) =>
-        f.name.toLowerCase().includes(q) ||
-        f.category.toLowerCase().includes(q)
+      (f) => f.name.toLowerCase().includes(q) || f.category.toLowerCase().includes(q)
     );
   }, [detectedFeeds, query, sourceType]);
 
@@ -107,20 +97,17 @@ export default function AddFeed() {
 
   useEffect(() => {
     if (sourceType !== "rss") return;
-
     const site_name = rssInput.trim();
     if (!site_name || site_name.length < 3) {
       setSelectedRss(null);
       setRssDetectResult(null);
       return;
     }
-
     const timeout = setTimeout(async () => {
       try {
         setIsDetectingRss(true);
-        const result: any = await rssApi.detectSources(site_name, token);
+        const result: any = await rssApi.detectSources(site_name);
         setRssDetectResult(result);
-
         const detected = result?.data?.candidates?.[0] ?? null;
         if (detected) {
           setSelectedRss({
@@ -141,29 +128,21 @@ export default function AddFeed() {
         setIsDetectingRss(false);
       }
     }, 500);
-
     return () => clearTimeout(timeout);
-  }, [rssInput, sourceType, token]);
+  }, [rssInput, sourceType]);
 
   useEffect(() => {
     if (sourceType !== "social") return;
-
     const site_name = socialInput.trim();
     if (!site_name || site_name.length < 3) {
       setSelectedSocial(null);
       return;
     }
-
     const timeout = setTimeout(async () => {
       try {
         setIsDetectingSocial(true);
         const selected = socialPlatforms.find((p) => p.id === platform);
-        const result: any = await rssApi.detectSources(
-          selected?.label ?? platform,
-          site_name,
-          token
-        );
-
+        const result: any = await rssApi.detectSources(site_name);
         const detected = result?.data?.source ?? result?.source ?? null;
         if (detected) {
           setSelectedSocial({
@@ -183,22 +162,17 @@ export default function AddFeed() {
         setIsDetectingSocial(false);
       }
     }, 500);
-
     return () => clearTimeout(timeout);
-  }, [socialInput, sourceType, platform, token]);
+  }, [socialInput, sourceType, platform]);
 
   const handleAddRss = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rssInput.trim()) return;
-
     try {
       setIsSubmittingRss(true);
-
       const sourceName = selectedRss?.name ?? rssInput.trim();
       const sourceUrl  = selectedRss?.url  ?? rssInput.trim();
-
-      await rssApi.addRssSource(sourceName, sourceUrl, 60, token);
-
+      await rssApi.addRssSource(sourceName, sourceUrl, CRAWL_FREQUENCY);
       toast.success(`Flux RSS ajouté : ${sourceName}`);
       setRssInput("");
       setSelectedRss(null);
@@ -214,15 +188,11 @@ export default function AddFeed() {
   const handleAddSocial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!socialInput.trim()) return;
-
     try {
       setIsSubmittingSocial(true);
-
       const selected   = socialPlatforms.find((p) => p.id === platform);
       const sourceName = selectedSocial?.name ?? selected?.label ?? platform;
-
-      await rssApi.addSocialSource(sourceName, socialInput.trim(), token);
-
+      await rssApi.addSocialSource(sourceName, socialInput.trim());
       toast.success(`${selected?.label ?? platform} ajouté : ${socialInput}`);
       setSocialInput("");
       setSelectedSocial(null);
@@ -285,7 +255,7 @@ export default function AddFeed() {
                 onSelect={handleRssSelect}
                 onFollow={async (item) => {
                   try {
-                    await rssApi.addRssSource(item.name, item.url, 10, token);
+                    await rssApi.addRssSource(item.name, item.url!, CRAWL_FREQUENCY);
                     toast.success(`${item.name} ajouté`);
                   } catch (error) {
                     console.error("Erreur ajout RSS :", error);
@@ -335,9 +305,7 @@ export default function AddFeed() {
                 </SelectTrigger>
                 <SelectContent>
                   {socialPlatforms.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.label}
-                    </SelectItem>
+                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -349,7 +317,7 @@ export default function AddFeed() {
                 onSelect={handleSocialSelect}
                 onFollow={async (item) => {
                   try {
-                    await rssApi.addSocialSource(item.name, item.url, token);
+                    await rssApi.addSocialSource(item.name, item.url!);
                     toast.success(`${item.name} ajouté`);
                   } catch {
                     toast.error("Erreur ajout réseau social");
@@ -423,7 +391,6 @@ export default function AddFeed() {
             >
               {all.map((feed) => {
                 const isFollowed = followed.has(feed.name);
-
                 return (
                   <li
                     key={feed.id}
@@ -453,11 +420,17 @@ export default function AddFeed() {
                       onClick={async () => {
                         if (isFollowed) return;
                         try {
-                          await rssApi.addRssSource(feed.name, feed.url!, 0, token);
+                          await rssApi.addRssSource(feed.name, feed.url!, CRAWL_FREQUENCY);
                           toggleFollow(feed.name);
                           toast.success(`${feed.name} ajouté`);
-                        } catch {
-                          toast.error("Erreur lors de l'ajout");
+                        } catch (err: any) {
+                          const msg: string = err?.message ?? "";
+                          if (msg.includes("existe déjà")) {
+                            toggleFollow(feed.name);
+                            toast.info(`${feed.name} est déjà dans vos sources`);
+                          } else {
+                            toast.error("Erreur lors de l'ajout");
+                          }
                         }
                       }}
                       className="gap-1.5 shrink-0"

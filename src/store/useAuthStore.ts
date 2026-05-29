@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { tokenStorage } from "@/utils/token";
 
 interface User {
   email: string;
@@ -7,9 +8,9 @@ interface User {
 
 interface AuthState {
   user: User | null;
+  token: string | null;
 
-  setUser: (userData: User) => void;
-
+  setUser: (userData: User, token: string) => void;
   logout: () => void;
 }
 
@@ -17,10 +18,17 @@ const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
 
-      setUser: (userData) => set({ user: userData }),
+      setUser: (userData, token) => {
+        // ✅ zustand persist sauvegarde dans auth-storage automatiquement
+        set({ user: userData, token });
+      },
 
-      logout: () => set({ user: null }),
+      logout: () => {
+        tokenStorage.remove(); // ✅ supprime auth-storage
+        set({ user: null, token: null });
+      },
     }),
     {
       name: "auth-storage",

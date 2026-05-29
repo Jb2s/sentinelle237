@@ -1,13 +1,15 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+const API_URL = import.meta.env.VITE_API_URL;
 
 type HttpMethod =
   | "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "HEAD";
 
 type ApiOptions = Omit<RequestInit, "headers" | "method"> & {
-  method?:  HttpMethod;
+  method?: HttpMethod;
   headers?: Record<string, string>;
+  responseType?: "blob" | "json" | "text"; // ✅ Ajout
 };
 
+// ✅ Après
 function forceLogout() {
   localStorage.removeItem("auth-storage");
   if (!window.location.pathname.startsWith("/connexion")) {
@@ -15,21 +17,13 @@ function forceLogout() {
   }
 }
 
-function getToken(): string | null {
-  try {
-    const raw = localStorage.getItem("auth-storage");
-    return raw ? JSON.parse(raw)?.state?.token ?? null : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function apiFetch<T = unknown>(
   endpoint: string,
   options?: ApiOptions
 ): Promise<T> {
-  const token = getToken();
 
+  const raw = localStorage.getItem("auth-storage");
+  const token = raw ? JSON.parse(raw)?.state?.token ?? null : null;
   const res = await fetch(`${API_URL}${endpoint}`, {
     method: options?.method ?? "GET",
     headers: {
@@ -41,15 +35,19 @@ export async function apiFetch<T = unknown>(
     ...options,
   });
 
+  // Token expiré ou invalide → logout immédiat
   if (res.status === 401) {
-  let body: any = null;
-  try { body = await res.json(); } catch {}
-  if (token) {
-    forceLogout();
-  }
+    let body: any = null;
+    try { body = await res.json(); } catch {}
 
-  throw new Error(body?.error ?? body?.message ?? "Session expirée");
-}
+    const isExpired =
+      body?.error?.toLowerCase().includes("expiré") ||
+      body?.error?.toLowerCase().includes("expired") ||
+      body?.code  === "TOKEN_EXPIRED";
+
+    forceLogout();
+    throw new Error(body?.error ?? body?.message ?? "Session expirée");
+  }
 
   if (!res.ok) {
     let errorBody: any = null;
@@ -57,12 +55,25 @@ export async function apiFetch<T = unknown>(
     if (ct?.includes("application/json")) {
       try { errorBody = await res.json(); } catch {}
     }
-    throw new Error(
-      errorBody?.message || errorBody?.error || res.statusText || "Erreur serveur"
-    );
+    const message =
+      errorBody?.message ||
+      errorBody?.error  ||
+      res.statusText    ||
+      "Erreur serveur";
+    throw new Error(message);
   }
 
   if (res.status === 204) return {} as T;
+
+  // ✅ Blob explicitement demandé (ex: PDF)
+  if (options?.responseType === "blob") {
+    const blob = await res.blob();
+    return {
+      blob,
+      rapportId: res.headers.get("x-rapport-id") as string,
+      nbArticles: Number(res.headers.get("x-nb-articles")),
+    } as T;
+  }
 
   const contentType = res.headers.get("content-type");
   if (contentType?.includes("application/json")) {
@@ -71,5 +82,3 @@ export async function apiFetch<T = unknown>(
 
   return res.text() as unknown as Promise<T>;
 }
-
-export { API_URL, getToken };

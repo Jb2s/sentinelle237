@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch } from "./clientDirect";
 
 export const authApi = {
   login: (email: string, mot_de_passe: string) =>

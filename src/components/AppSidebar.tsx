@@ -15,29 +15,14 @@ import useLogoutSidebarStore from "@/store/useLogoutSidebarStore";
 import { NotificationPanel } from "@/components/NotificationPanel";
 
 const mainItems = [
-  { icon: Clock3,    label: "Aujourd'hui",     to: "/" },
-  { icon: Bookmark,  label: "À lire plus tard", to: "/a-lire-plus-tard" },
-  { icon: PenLine,   label: "Annotés",          to: "/annotes" },
+  { icon: Clock3,   label: "Aujourd'hui",      to: "/" },
+  { icon: Bookmark, label: "À lire plus tard",  to: "/a-lire-plus-tard" },
+  { icon: PenLine,  label: "Annotés",           to: "/annotes" },
 ];
 
-export function AppSidebar() {
-  const navigate      = useNavigate();
-  const { theme, toggleTheme } = useTheme();
-  const location      = useLocation();
-  const user          = useAuthStore((state) => state.user);
-  const openLogoutBar = useLogoutSidebarStore((state) => state.openLogoutBar);
-  const isMobile      = useIsMobile();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const railActions = [
-    { Icon: Plus,       label: "Ajouter un flux",   path: "/ajouter-flux", onClick: () => navigate("/ajouter-flux") },
-    { Icon: Search,     label: "Recherche",          path: "/recherche",    onClick: () => navigate("/recherche") },
-    { Icon: theme === "dark" ? Sun : Moon, label: "Thème", path: null, onClick: toggleTheme },
-    { Icon: Wrench,     label: "Outils",             path: "/outils",       onClick: () => navigate("/outils") },
-    { Icon: HelpCircle, label: "Aide",               path: "/help",         onClick: () => navigate("/help") },
-  ];
-
-  const FluxList = () => (
+// Composant externe — stable entre les renders, SidebarSection monte une seule fois
+function FluxList() {
+  return (
     <div className="px-3 flex-1 overflow-y-auto">
       <NavLink
         to="/"
@@ -51,6 +36,24 @@ export function AppSidebar() {
       <SidebarSection />
     </div>
   );
+}
+
+export function AppSidebar() {
+  const navigate      = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+  const location      = useLocation();
+  const user          = useAuthStore((state) => state.user);
+  const openLogoutBar = useLogoutSidebarStore((state) => state.openLogoutBar);
+  const isMobile      = useIsMobile();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const railActions = [
+    { Icon: Plus,       label: "Ajouter un flux", path: "/ajouter-flux", onClick: () => navigate("/ajouter-flux") },
+    { Icon: Search,     label: "Recherche",        path: "/recherche",    onClick: () => navigate("/recherche") },
+    { Icon: theme === "dark" ? Sun : Moon, label: "Thème", path: null, onClick: toggleTheme },
+    { Icon: Wrench,     label: "Outils",           path: "/outils",       onClick: () => navigate("/outils") },
+    { Icon: HelpCircle, label: "Aide",             path: "/help",         onClick: () => navigate("/help") },
+  ];
 
   return (
     <>
@@ -93,10 +96,7 @@ export function AppSidebar() {
                   <div className="h-0.5 w-[12px] bg-[#FCD116]" />
                 </div>
               </div>
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="w-9 h-9 rounded-lg hover:bg-muted flex items-center justify-center"
-              >
+              <button onClick={() => setMobileOpen(false)} className="w-9 h-9 rounded-lg hover:bg-muted flex items-center justify-center">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -108,14 +108,10 @@ export function AppSidebar() {
                   to={item.to}
                   end={item.to === "/"}
                   onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-smooth",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/60"
-                    )
-                  }
+                  className={({ isActive }) => cn(
+                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-smooth",
+                    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+                  )}
                 >
                   <item.icon className="w-4 h-4" />
                   {item.label}
@@ -130,9 +126,7 @@ export function AppSidebar() {
                   onClick={() => { onClick(); setMobileOpen(false); }}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-smooth",
-                    path && location.pathname === path
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "hover:bg-sidebar-accent/60 text-sidebar-foreground"
+                    path && location.pathname === path ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/60 text-sidebar-foreground"
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -154,7 +148,6 @@ export function AppSidebar() {
       {/* ================= DESKTOP SIDEBAR ================= */}
       {!isMobile && (
         <div className="flex h-screen sticky top-0">
-
           {/* RAIL */}
           <aside className="w-14 bg-gradient-primary flex flex-col items-center py-4 gap-5 text-primary-foreground">
             <button
@@ -172,9 +165,7 @@ export function AppSidebar() {
                   title={label}
                   className={cn(
                     "w-9 h-9 rounded-lg flex items-center justify-center transition-smooth",
-                    path && location.pathname === path
-                      ? "bg-primary-foreground/25 shadow-soft"
-                      : "hover:bg-primary-foreground/15"
+                    path && location.pathname === path ? "bg-primary-foreground/25 shadow-soft" : "hover:bg-primary-foreground/15"
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -182,10 +173,8 @@ export function AppSidebar() {
               ))}
             </div>
 
-            {/* Notifications + Avatar en bas du rail */}
             <div className="mt-auto flex flex-col items-center gap-3">
               <NotificationPanel />
-
               <button
                 onClick={openLogoutBar}
                 title={user?.email}
@@ -201,9 +190,7 @@ export function AppSidebar() {
             <div className="p-5 border-b border-sidebar-border">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <h1 className="font-display font-bold text-xl mt-1 text-sidebar-foreground">
-                  Sentinelle 237
-                </h1>
+                <h1 className="font-display font-bold text-xl mt-1 text-sidebar-foreground">Sentinelle 237</h1>
               </div>
               <div className="flex items-center ml-5">
                 <div className="h-0.5 w-[12px] bg-[#007A5E]" />
@@ -218,14 +205,10 @@ export function AppSidebar() {
                   key={item.label}
                   to={item.to}
                   end={item.to === "/"}
-                  className={({ isActive }) =>
-                    cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-smooth",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/60"
-                    )
-                  }
+                  className={({ isActive }) => cn(
+                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-smooth",
+                    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+                  )}
                 >
                   {({ isActive }) => (
                     <>

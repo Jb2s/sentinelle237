@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "@/api/client";
 
 export type SidebarSource = {
   id_source:     number;
   nom_source:    string;
   article_count: number;
+  url_source?:   string;
+  color?:        string;
 };
 
 export type SidebarCategory = {
@@ -14,14 +16,8 @@ export type SidebarCategory = {
 };
 
 const SOURCE_COLORS = [
-  "bg-primary",
-  "bg-primary-deep",
-  "bg-primary-glow",
-  "bg-highlight",
-  "bg-emerald-500",
-  "bg-violet-500",
-  "bg-rose-500",
-  "bg-amber-500",
+  "bg-primary", "bg-primary-deep", "bg-primary-glow", "bg-highlight",
+  "bg-emerald-500", "bg-violet-500", "bg-rose-500", "bg-amber-500",
 ];
 
 function deriveColor(name: string): string {
@@ -37,17 +33,31 @@ export function useSidebarData() {
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setCategories([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
     apiFetch<any>("/api/categories/with-sources")
       .then((res) => {
-        const data: SidebarCategory[] = res?.data ?? res ?? [];
+        const raw  = res?.data ?? res;
+        const data = Array.isArray(raw) ? raw : [];
         setCategories(data);
       })
       .catch((err) => setError(err?.message ?? "Erreur"))
       .finally(() => setIsLoading(false));
   }, []);
 
-  // Injecte la couleur dérivée sur chaque source
+  useEffect(() => {
+    load();
+  }, [load]);
+
   const categoriesWithColor = categories.map((cat) => ({
     ...cat,
     sources: cat.sources.map((src) => ({
@@ -56,5 +66,5 @@ export function useSidebarData() {
     })),
   }));
 
-  return { categories: categoriesWithColor, isLoading, error };
+  return { categories: categoriesWithColor, isLoading, error, refresh: load };
 }

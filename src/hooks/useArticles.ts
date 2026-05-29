@@ -26,19 +26,24 @@ type State = {
   hasMore:       boolean;
 };
 
-export function useArticles() {
-  const [state, setState] = useState<State>({
-    articles:      [],
-    total:         0,
-    isLoading:     true,
-    isLoadingMore: false,
-    error:         null,
-    hasMore:       false,
-  });
+const INITIAL_STATE: State = {
+  articles:      [],
+  total:         0,
+  isLoading:     true,
+  isLoadingMore: false,
+  error:         null,
+  hasMore:       false,
+};
 
+export function useArticles() {
+  const [state, setState] = useState<State>(INITIAL_STATE);
   const offsetRef = useRef(0);
 
-  const load = async (offset: number, append: boolean) => {
+  const load = useCallback(async (offset: number, append: boolean) => {
+    // Vérification synchrone du token au moment de l'appel
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     setState((prev) => ({
       ...prev,
       isLoading:     !append,
@@ -68,17 +73,34 @@ export function useArticles() {
         error:         err?.message ?? "Erreur de chargement",
       }));
     }
-  };
+  }, []);
 
   useEffect(() => {
     offsetRef.current = 0;
+    setState(INITIAL_STATE);
     load(0, false);
-  }, []);
+  }, [load]);
+
+  // Polling toutes les 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      offsetRef.current = 0;
+      load(0, false);
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [load]);
 
   const loadMore = useCallback(() => {
     if (state.isLoadingMore || !state.hasMore) return;
     load(offsetRef.current, true);
-  }, [state.isLoadingMore, state.hasMore]);
+  }, [state.isLoadingMore, state.hasMore, load]);
 
-  return { ...state, loadMore };
+  const refresh = useCallback(() => {
+    offsetRef.current = 0;
+    load(0, false);
+  }, [load]);
+
+  return { ...state, loadMore, refresh };
 }

@@ -1,9 +1,6 @@
-import { useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-// import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -11,103 +8,120 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Sparkles,
-  CalendarIcon,
-  Mail,
-  Plus,
-  X,
-  Filter,
-  Clock,
+  Sparkles, Loader2, Filter, Clock,
+  FileText, Download, Eye, ChevronDown, ChevronUp,
 } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { articles } from "@/data/articles";
+import { reportsApi, type RapportListItem, type PreviewReport } from "@/api/ia.api";
+import { apiFetch } from "@/api/client";
 
 const PERIODS = [
-  { value: "day", label: "Quotidien" },
-  { value: "week", label: "Hebdomadaire" },
-  { value: "month", label: "Mensuel" },
-  { value: "custom", label: "Plage personnalisée" },
+  { value: "quotidienne", label: "Quotidien"     },
+  { value: "hebdo",       label: "Hebdomadaire"  },
+  { value: "mensuelle",   label: "Mensuel"       },
 ];
 
-// const SUGGESTED_CONTACTS = [
-//   { name: "Alexandre Dupont", email: "alexandre@disvi.app" },
-//   { name: "Marie Laurent", email: "marie.laurent@disvi.app" },
-//   { name: "Comité Veille", email: "veille@disvi.app" },
-// ];
+const ZONES = [
+  { value: "all",      label: "Toutes les zones"      },
+  { value: "nationale",      label: "Nationale"      },
+  { value: "internationale", label: "Internationale" },
+];
+
+type Category = { id_cat: number; nom_cat: string };
+
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString("fr-FR", {
+      day: "numeric", month: "short", year: "numeric",
+    });
+  } catch { return iso; }
+}
 
 export default function SynthesisSettings() {
-  // const [showSuggestions, setShowSuggestions] = useState(false);
-  const allCategories = useMemo(
-    () => Array.from(new Set(articles.map((a) => a.category))).sort(),
-    [],
-  );
+  const [zone,     setZone]     = useState("all");
+  const [period,   setPeriod]   = useState("quotidienne");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCat, setSelectedCat] = useState<Category | null>(null);
 
-  const [period, setPeriod] = useState("day");
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
-  const [categories, setCategories] = useState<string[]>(allCategories);
-  const [recipients, setRecipients] = useState<string[]>([]);
-  const [newRecipient, setNewRecipient] = useState("");
+  const [preview,       setPreview]       = useState<PreviewReport | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [loadingGen,    setLoadingGen]    = useState(false);
+  const [showPreview,   setShowPreview]   = useState(false);
 
-  const toggleCategory = (cat: string) => {
-    setCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
-    );
+  const [rapports,     setRapports]     = useState<RapportListItem[]>([]);
+  const [loadingList,  setLoadingList]  = useState(false);
+
+  // Charger les catégories depuis l'API
+  useEffect(() => {
+    apiFetch<any>("/api/categories")
+      .then((res: any) => {
+        const data: Category[] = res?.data ?? res ?? [];
+        setCategories(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Charger l'historique des rapports
+  useEffect(() => {
+    setLoadingList(true);
+    reportsApi.list({ limit: 10 })
+      .then(setRapports)
+      .catch(() => {})
+      .finally(() => setLoadingList(false));
+  }, []);
+
+  const handlePreview = async () => {
+    if (!selectedCat) { toast.error("Sélectionnez une catégorie"); return; }
+    setLoadingPreview(true);
+    setShowPreview(false);
+    try {
+      const data = await reportsApi.previewReport(period, selectedCat.id_cat, zone, 50);
+      setPreview(data);
+      setShowPreview(true);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erreur aperçu");
+    } finally {
+      setLoadingPreview(false);
+    }
   };
 
-  const addRecipient = (email: string) => {
-    const trimmed = email.trim();
-    if (!trimmed) return;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      toast.error("Adresse email invalide");
-      return;
+  const handleGenerate = async () => {
+    if (!selectedCat) { toast.error("Sélectionnez une catégorie"); return; }
+    setLoadingGen(true);
+    try {
+      const { blob, rapportId, nbArticles } = await reportsApi.genererRapportPdf(
+        period, selectedCat.id_cat, zone, 50
+      );
+
+      // Téléchargement automatique
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href     = url;
+      link.download = `synthese_${period}_${selectedCat.nom_cat}_${Date.now()}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Rapport généré — ${nbArticles} articles inclus`);
+
+      // Rafraîchir l'historique
+      reportsApi.list({ limit: 10 }).then(setRapports).catch(() => {});
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erreur génération PDF");
+    } finally {
+      setLoadingGen(false);
     }
-    if (recipients.includes(trimmed)) {
-      toast.info("Destinataire déjà ajouté");
-      return;
-    }
-    setRecipients([...recipients, trimmed]);
-    setNewRecipient("");
   };
 
-  const removeRecipient = (email: string) =>
-    setRecipients(recipients.filter((r) => r !== email));
-
-  const handleSave = () => {
-    if (recipients.length === 0) {
-      toast.error("Ajoutez au moins un destinataire");
-      return;
-    }
-    if (categories.length === 0) {
-      toast.error("Sélectionnez au moins une catégorie");
-      return;
-    }
-    toast.success(
-      `Synthèse ${PERIODS.find((p) => p.value === period)?.label.toLowerCase()} programmée pour ${recipients.length} destinataire(s)`,
-    );
+  const handleReset = () => {
+    setPeriod("quotidienne");
+    setZone("nationale");
+    setSelectedCat(null);
+    setPreview(null);
+    setShowPreview(false);
+    toast.info("Configuration réinitialisée");
   };
-
-  const handleCancel = () => {
-  setPeriod("day");
-
-  setDate(new Date());
-
-  setEndDate(new Date());
-
-  setCategories(allCategories);
-
-  setRecipients([]);
-
-  setNewRecipient("");
-
-  toast.info("Configuration réinitialisée");
-};
 
   return (
     <PageShell
@@ -116,256 +130,176 @@ export default function SynthesisSettings() {
       meta={
         <span className="inline-flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5" />
-          Réglez la période, les catégories et les destinataires email
+          Période, catégorie et zone géographique
         </span>
       }
-      // aside={<SynthesisPanel />}
     >
       <div className="space-y-6">
-        {/* Période */}
+
+        {/* Période + Zone */}
         <section className="rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <Clock className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-lg leading-tight">
-                Période de synthèse
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Sur quelle plage de temps les articles sont-ils synthétisés ?
-              </p>
+              <h2 className="font-display font-bold text-lg leading-tight">Période de synthèse</h2>
+              <p className="text-xs text-muted-foreground">Plage de temps couverte par le rapport.</p>
             </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Fréquence</Label>
+              <label className="text-sm font-medium">Fréquence</label>
               <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {PERIODS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>
-                {period === "custom" ? "Date de début" : "Date de référence"}
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP", { locale: fr }) : "Choisir une date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                    locale={fr}
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
+              <label className="text-sm font-medium">Zone</label>
+              <Select value={zone} onValueChange={setZone}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ZONES.map((z) => (
+                    <SelectItem key={z.value} value={z.value}>{z.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-
-            {period === "custom" && (
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Date de fin</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !endDate && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate
-                        ? format(endDate, "PPP", { locale: fr })
-                        : "Choisir une date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      initialFocus
-                      locale={fr}
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            )}
           </div>
         </section>
 
-        {/* Catégories */}
+        {/* Catégorie */}
         <section className="rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <Filter className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-lg leading-tight">
-                Catégories incluses
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Choisissez les sujets pris en compte dans la synthèse.
-              </p>
+              <h2 className="font-display font-bold text-lg leading-tight">Catégorie</h2>
+              <p className="text-xs text-muted-foreground">Sujet principal de la synthèse.</p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {allCategories.map((cat) => {
-              const active = categories.includes(cat);
-              return (
-                <button
-                  key={cat}
-                  onClick={() => toggleCategory(cat)}
-                  className={cn(
-                    "px-3.5 py-2 rounded-full text-sm font-semibold border transition-smooth",
-                    active
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background text-muted-foreground border-border hover:border-primary/40",
-                  )}
-                >
-                  {cat}
-                </button>
-              );
-            })}
+            {categories.map((cat) => (
+              <button
+                key={cat.id_cat}
+                onClick={() => setSelectedCat((prev) => prev?.id_cat === cat.id_cat ? null : cat)}
+                className={cn(
+                  "px-3.5 py-2 rounded-full text-sm font-semibold border transition-smooth",
+                  selectedCat?.id_cat === cat.id_cat
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:border-primary/40"
+                )}
+              >
+                {cat.nom_cat}
+              </button>
+            ))}
           </div>
         </section>
 
-        {/* Destinataires */}
-        <section className="rounded-2xl border border-border bg-card p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <Mail className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="font-display font-bold text-lg leading-tight">
-                Destinataires email
+        {/* Aperçu */}
+        {showPreview && preview && (
+          <section className="rounded-2xl border border-border bg-card p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-display font-bold text-lg flex items-center gap-2">
+                <Eye className="w-4 h-4 text-primary" />
+                Aperçu
               </h2>
-              <p className="text-xs text-muted-foreground">
-                Qui reçoit la synthèse générée par e-mail ?
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {/* <div className="space-y-2">
-              <Label>Contacts suggérés</Label>
-              <div className="space-y-2">
-                {SUGGESTED_CONTACTS.map((c) => {
-                  const checked = recipients.includes(c.email);
-                  return (
-                    <label
-                      key={c.email}
-                      className={cn(
-                        "flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-smooth",
-                        checked
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/40",
-                      )}
-                    >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={() =>
-                          checked ? removeRecipient(c.email) : addRecipient(c.email)
-                        }
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm">{c.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {c.email}
-                        </p>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            </div> */}
-
-            <div className="space-y-2">
-              <Label htmlFor="new-recipient">Ajouter un destinataire</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="new-recipient"
-                  type="email"
-                  placeholder="nom@entreprise.com"
-                  value={newRecipient}
-                  onChange={(e) => setNewRecipient(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addRecipient(newRecipient);
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => addRecipient(newRecipient)}
-                >
-                  <Plus className="w-4 h-4" />
-                  Ajouter
-                </Button>
-              </div>
+              <button onClick={() => setShowPreview(false)}>
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              </button>
             </div>
 
-            {recipients.length > 0 && (
-              <div className="space-y-2">
-                <Label>Liste d'envoi ({recipients.length})</Label>
-                <div className="flex flex-wrap gap-2">
-                  {recipients.map((email) => (
-                    <span
-                      key={email}
-                      className="inline-flex items-center gap-2 rounded-full bg-secondary text-secondary-foreground px-3 py-1.5 text-sm"
-                    >
-                      <Mail className="w-3 h-3" />
-                      {email}
-                      <button
-                        onClick={() => removeRecipient(email)}
-                        className="hover:text-destructive"
-                        aria-label={`Retirer ${email}`}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
+            <div className="flex items-center gap-6 mb-4 text-sm text-muted-foreground">
+              <span><strong className="text-foreground">{preview.nb_articles}</strong> articles</span>
+              <span>Du <strong className="text-foreground">{formatDate(preview.date_debut)}</strong> au <strong className="text-foreground">{formatDate(preview.date_fin)}</strong></span>
+            </div>
+
+            {preview.articles?.length > 0 && (
+              <ul className="space-y-1 max-h-48 overflow-y-auto">
+                {preview.articles.slice(0, 10).map((a: any, i: number) => (
+                  <li key={i} className="text-sm text-muted-foreground truncate flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                    {a.titre ?? a.title}
+                  </li>
+                ))}
+                {preview.nb_articles > 10 && (
+                  <li className="text-xs text-muted-foreground pl-3.5">
+                    +{preview.nb_articles - 10} autres articles…
+                  </li>
+                )}
+              </ul>
             )}
-          </div>
-        </section>
+          </section>
+        )}
 
+        {/* Actions */}
         <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={handleCancel}>Annuler</Button>
-          <Button onClick={handleSave}>
-            <Sparkles className="w-4 h-4" />
-            Programmer la synthèse
+          <Button variant="outline" onClick={handleReset} disabled={loadingPreview || loadingGen}>
+            Réinitialiser
+          </Button>
+
+          <Button variant="secondary" onClick={handlePreview} disabled={loadingPreview || loadingGen || !selectedCat}>
+            {loadingPreview ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" />Aperçu…</>
+            ) : (
+              <><Eye className="w-4 h-4 mr-2" />Aperçu</>
+            )}
+          </Button>
+
+          <Button onClick={handleGenerate} disabled={loadingGen || loadingPreview || !selectedCat}>
+            {loadingGen ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" />Génération…</>
+            ) : (
+              <><Sparkles className="w-4 h-4 mr-2" />Générer le PDF</>
+            )}
           </Button>
         </div>
+
+        {/* Historique */}
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary" />
+            Historique des rapports
+          </h2>
+
+          {loadingList ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : rapports.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Aucun rapport généré.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {rapports.map((r) => (
+                <li key={r.id_note} className="flex items-center gap-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{r.titre_note}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.type_periode} · {r.nb_informations} articles · {formatDate(r.created_at)}
+                    </p>
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                    r.statut === "envoye"       ? "bg-emerald-100 text-emerald-700" :
+                    r.statut === "genere"        ? "bg-blue-100 text-blue-700" :
+                    "bg-yellow-100 text-yellow-700"
+                  )}>
+                    {r.statut}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </PageShell>
   );

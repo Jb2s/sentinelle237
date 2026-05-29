@@ -182,7 +182,6 @@ export function PageShell({
               <section className="min-w-0">
                 {children}
               </section>
-
               <aside
                 className={cn(
                   "min-w-0",
