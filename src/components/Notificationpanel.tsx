@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Bell, Check, FileText, Rss, Loader2, X, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/hooks/useNotifications";
-import { notificationsApi, type Alerte } from "@/api/notifications.api";
+import { notificationsApi, type Alerte } from "@/api/Notifications.api";
 
 function formatDate(iso: string): string {
   try {
