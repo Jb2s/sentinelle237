@@ -6,9 +6,8 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 
-# ASTUCE : On demande à Vite de remplacer l'alias "@" par le vrai chemin physique 
-# pendant le build pour contourner le bug d'import Linux
-RUN npx vite build --resolve.alias.@=/app/src
+# On lance le build standard de Vite (les alias sont résolus via ton vite.config.ts)
+RUN npm run build
 
 # --- Étape 2 : Serveur web de production ---
 FROM nginx:alpine
