@@ -56,7 +56,7 @@ export async function apiFetch<T = unknown>(
   const res = await fetch(`${API_URL}${endpoint}`, {
     method: options?.method ?? "GET",
     headers: {
-      "application/json": "application/json",
+      "Accept": "application/json",
       "Content-Type":     "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
