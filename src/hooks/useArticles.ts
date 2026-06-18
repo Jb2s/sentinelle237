@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { articlesApi } from "@/api/articles.api";
 import type { Article } from "@/types/article.types";
+import { friendlyError } from "@/api/client";
 
 const PAGE_SIZE = 20;
 
@@ -37,10 +38,11 @@ const INITIAL_STATE: State = {
 
 export function useArticles() {
   const [state, setState] = useState<State>(INITIAL_STATE);
-  const offsetRef = useRef(0);
+  const offsetRef  = useRef(0);
+  const articleIds = useRef<Set<string>>(new Set());
 
+  // Chargement initial ou "load more" — affiche le spinner
   const load = useCallback(async (offset: number, append: boolean) => {
-    // Vérification synchrone du token au moment de l'appel
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -55,8 +57,14 @@ export function useArticles() {
       const data                = await articlesApi.getAll({ limit: PAGE_SIZE, offset });
       const { articles, total } = extractArticles(data);
 
+      if (!append) {
+        articleIds.current = new Set(articles.map((a) => String(a.id_article)));
+      } else {
+        articles.forEach((a) => articleIds.current.add(String(a.id_article)));
+      }
+
       setState((prev) => ({
-        articles:      append ? [...prev.articles, ...articles] : articles,
+        articles: append ? [...prev.articles, ...articles] : articles,
         total,
         isLoading:     false,
         isLoadingMore: false,
@@ -70,35 +78,69 @@ export function useArticles() {
         ...prev,
         isLoading:     false,
         isLoadingMore: false,
-        error:         err?.message ?? "Erreur de chargement",
+        error:         friendlyError(err),
       }));
     }
   }, []);
 
+  // Refresh silencieux — ne touche pas aux articles affichés pendant le fetch
+  // Insère seulement les nouveaux articles en tête de liste
+  const silentRefresh = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const data                = await articlesApi.getAll({ limit: PAGE_SIZE, offset: 0 });
+      const { articles, total } = extractArticles(data);
+
+      setState((prev) => {
+        // Filtrer uniquement les articles vraiment nouveaux
+        const newOnes = articles.filter(
+          (a) => !articleIds.current.has(String(a.id_article))
+        );
+
+        if (newOnes.length === 0) {
+          // Mettre à jour le total uniquement
+          return { ...prev, total };
+        }
+
+        newOnes.forEach((a) => articleIds.current.add(String(a.id_article)));
+
+        return {
+          ...prev,
+          // Nouveaux articles en tête, articles existants conservés
+          articles: [...newOnes, ...prev.articles],
+          total,
+        };
+      });
+    } catch {
+      // Échec silencieux — ne pas effacer les articles affichés
+    }
+  }, []);
+
+  // Chargement initial
   useEffect(() => {
     offsetRef.current = 0;
+    articleIds.current = new Set();
     setState(INITIAL_STATE);
     load(0, false);
   }, [load]);
 
-  // Polling toutes les 30s
+  // Polling toutes les 30s — silencieux pour ne pas perturber l'affichage
   useEffect(() => {
-    const interval = setInterval(() => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      offsetRef.current = 0;
-      load(0, false);
-    }, 30_000);
+    const interval = setInterval(silentRefresh, 30_000);
     return () => clearInterval(interval);
-  }, [load]);
+  }, [silentRefresh]);
 
   const loadMore = useCallback(() => {
     if (state.isLoadingMore || !state.hasMore) return;
     load(offsetRef.current, true);
   }, [state.isLoadingMore, state.hasMore, load]);
 
+  // Refresh manuel explicite (ex: après ajout d'un flux) — recharge tout
   const refresh = useCallback(() => {
     offsetRef.current = 0;
+    articleIds.current = new Set();
     load(0, false);
   }, [load]);
 
