@@ -29,7 +29,6 @@ export async function apiFetch<T = unknown>(
   options?: ApiOptions
 ): Promise<T> {
   const token = getToken();
-
   const res = await fetch(`${API_URL}${endpoint}`, {
     method: options?.method ?? "GET",
     headers: {
@@ -42,14 +41,13 @@ export async function apiFetch<T = unknown>(
   });
 
   if (res.status === 401) {
-  let body: any = null;
-  try { body = await res.json(); } catch {}
-  if (token) {
-    forceLogout();
+    let body: any = null;
+    try { body = await res.json(); } catch {}
+    if (token) {
+      forceLogout();
+    }
+    throw new Error(body?.error ?? body?.message ?? "Session expirée");
   }
-
-  throw new Error(body?.error ?? body?.message ?? "Session expirée");
-}
 
   if (!res.ok) {
     let errorBody: any = null;
@@ -68,8 +66,17 @@ export async function apiFetch<T = unknown>(
   if (contentType?.includes("application/json")) {
     return res.json() as Promise<T>;
   }
-
   return res.text() as unknown as Promise<T>;
+}
+
+export function friendlyError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message || "Une erreur inattendue est survenue.";
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  return "Une erreur inattendue est survenue.";
 }
 
 export { API_URL, getToken };
